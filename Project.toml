@@ -3,6 +3,9 @@ uuid = "45e22d02-e628-441d-a1c7-54dcb4b48aca"
 authors = ["Felix Nößler"]
 version = "0.1.0"
 
+[deps]
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+
 [compat]
 julia = "1"
 
