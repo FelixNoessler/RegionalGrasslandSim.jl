@@ -2,14 +2,7 @@
 
 Documentation for RegionalGrasslandSim.jl
 
-```@contents
-Pages = [
-    "index.md",
-    "getting_started.md",
-    "usage.md",
-]
-
-Pages = ["index.md"]
+```@index
 Depth = 5
 ```
 

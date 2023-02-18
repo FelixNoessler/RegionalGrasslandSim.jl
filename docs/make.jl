@@ -1,11 +1,10 @@
 using Documenter
-
-push!(LOAD_PATH,"../src/")
 using RegionalGrasslandSim
 
+# for prettyurls you need locally a live server
 makedocs(
     sitename = "RegionalGrasslandSim",
-    format = Documenter.HTML(),
+    format = Documenter.HTML(prettyurls = true), 
     modules = [RegionalGrasslandSim],
     pages = Any[
         "Home" => "index.md",

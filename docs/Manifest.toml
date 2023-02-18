@@ -2,7 +2,7 @@
 
 julia_version = "1.8.5"
 manifest_format = "2.0"
-project_hash = "84b3a0d618269caa85621b255060e5f7935e1962"
+project_hash = "cd57cee44038f6b0dd899efddb6765ee25402cdd"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -648,6 +648,12 @@ version = "0.2.18"
 git-tree-sha1 = "45e428421666073eab6f2da5c9d310d99bb12f9b"
 uuid = "189a3867-3050-52da-a836-e630ba90ab69"
 version = "1.2.2"
+
+[[deps.RegionalGrasslandSim]]
+deps = ["ComponentArrays", "OrdinaryDiffEq"]
+path = ".."
+uuid = "45e22d02-e628-441d-a1c7-54dcb4b48aca"
+version = "0.1.0"
 
 [[deps.Requires]]
 deps = ["UUIDs"]
