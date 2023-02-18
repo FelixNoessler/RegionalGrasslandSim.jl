@@ -13,10 +13,9 @@ makedocs(
             "Diffrence equation" => "Modelling API/Difference equation/index.md",
             "Growth" => "Modelling API/Growth/index.md"
         ]
-    ],
-    draft = true
+    ]
 )
 
 deploydocs(
-    repo = "github.com/felixnoessler/RegionalGrasslandSim.jl.git",
+    repo = "github.com/FelixNoessler/RegionalGrasslandSim.jl.git",
 )
