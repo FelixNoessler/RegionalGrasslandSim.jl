@@ -16,5 +16,5 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/FelixNoessler/RegionalGrasslandSim.jl.git",
+    repo = "github.com/FelixNoessler/RegionalGrasslandSim.jl.git"
 )
