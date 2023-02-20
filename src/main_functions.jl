@@ -1,7 +1,7 @@
 """
     one_day!(du,u,p,t)
 
-Change in the state variables during one day.
+Describes the change in the state variables during one day.
 """
 function one_day!(du,u,p,t)
 
@@ -51,26 +51,51 @@ end
 
 Initialise the difference equation problem.
 """
-function discrete_prob()
+function discrete_prob(; tmax=100)
     p = initialize_parameters()
 
     return DiscreteProblem(
         one_day!,
         initial_conditions(p),
-        (0, 100),
+        (0, tmax),
         p;
     )
 end
 
+"""
+    run_model(prob)
 
+Solve the difference equation and return a solution.
+
+See also [`transform_solution`](@ref) for further details about the solution type.
+"""
+function run_model(prob)
+    sol = solve(prob, FunctionMap(scale_by_time=true))
+    d = transform_solution(sol, prob)
+
+    return d
+end
+
+
+"""
+    transform_solution(sol, prob)
+
+Transfroms `ODESolution` into a `NamedTuple` that can be easily used for further analysis. 
+
+The `NamedTuple` contains the biomass of each species in each patch (`Biomass[patch, species, time]`), the soil water of each patch (`Water[patch, time]`), the `time` as an array in days and a `NamedTuple` of all parameters (`p`). 
+
+See also [`run_model`](@ref).
+"""
 function transform_solution(sol, prob)
     b = hcat([u.Biomass for u in sol.u]...)
     b = reshape(b, prob.p.npatches, prob.p.nspecies, :);
 
     w = hcat([u.Water for u in sol.u]...)
 
-    return ca.ComponentVector(
+    return (
         Biomass=b, 
-        Water=w
+        Water=w,
+        time=sol.t,
+        p=prob.p
     )
 end
