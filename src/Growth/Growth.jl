@@ -10,15 +10,15 @@ function greet_your_package_name()
     return "Hello RegionalGrasslandSim!"
 end
 
-function potential_growth(p, biomass)
+function potential_growth(p, biomass; PAR)
     lais = calculate_LAI(p, biomass)
-    LAItot = calculate_totLAI(lais)
+    LAItot = sum(lais)
     
-    PAR = 10
+ 
     RUE_max = 3
     α = 0.6
 
-    total_growth = 10 * PAR * RUE_max * (1 -  exp(-α * LAItot))
+    total_growth = 10 * 0.0001 * PAR * RUE_max * (1 -  exp(-α * LAItot))
 
     species_growth = total_growth .* lais ./ LAItot
 
@@ -27,11 +27,19 @@ end
 
 function calculate_LAI(p, biomass)
     LAM = 0.62
-    return p.species.sla .* biomass  .* LAM .* 0.1
+    return p.species.sla .* biomass .* LAM .* 0.1
 end
 
-function calculate_totLAI(lai_values)
-    return sum(lai_values)
+function senescence(; biomass, t, p)
+    # include a seasonal effect
+    # less senescence in spring, 
+    # high senescens rate in autumn 
+    # Ψ₁, Ψ₂ = 775, 3000
+    # SEN_min, SEN_max = 1, 3
+
+    return 0.01 .* p.species.μ .* biomass
 end
+
+
 
 end # of module

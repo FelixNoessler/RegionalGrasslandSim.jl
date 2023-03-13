@@ -3,22 +3,38 @@
 
 Describes the change in the state variables during one day.
 """
-function one_day!(du,u,p,t)
+function one_day!(du, u, p, t)
 
-    for pa in 1:p.npatches
+    adj = 365
+    t_adj = (t - 1) - ((t - 1) ÷ adj * adj) + 1
 
-        # -------------- potential growth
-        pot_growth = Growth.potential_growth(
-            p, 
-            u.Biomass[pa, :]
-        )
-        du.Biomass[pa, :] += pot_growth
+    # --------------------- biomass dynamics
+    if t_adj < 80 || t_adj > 300
+        du.Biomass .= 0
+    else
+        for pa in 1:p.npatches
+            # -------------- potential growth
+            pot_growth = Growth.potential_growth(
+                p, 
+                u.Biomass[pa, :];
+                PAR = PAR[t_adj - 79]
+            )
 
-        for i in 1:p.nspecies
-            du.Biomass[pa, i] = pot_growth[i] #-0.02 * u.Biomass[pa,i]
+            # -------------- senescence
+            sen = Growth.senescence(; 
+                biomass=u.Biomass[pa, :], 
+                t=t_adj,
+                p)
+
+            for i in 1:p.nspecies
+                du.Biomass[pa, i] = pot_growth[i] - sen[i]
+            end
         end
+    end
 
-        du.Water[pa] = -rand()*2
+    # --------------------- water dynamics
+    for pa in 1:p.npatches
+        du.Water[pa] = - 0.01 .* u.Water[pa]
     end
 
     return nothing
@@ -27,7 +43,7 @@ end
 function initial_conditions(p)
     return ca.ComponentVector(
         Biomass=fill(
-            100.0 + 2*rand(), 
+            10.0  + 1000*rand(), 
             p.npatches, 
             p.nspecies
         ),
@@ -36,14 +52,21 @@ function initial_conditions(p)
 end
 
 function initialize_parameters()
-    return (
+
+    slas = [2.213,3,4,5,6]
+    ldmcs =  [0.4, 0.2, 0.3, 0.4, 0.2]
+    μs = (0.023 .+ 0.382 .* slas .- 0.0000629 .* ldmcs) .^ (-1)
+
+    p = (
         npatches=2,
         nspecies=5,
         species = (
-            sla = [2.213,3,4,5,6],
-            ldmc = [0.4, 0.2, 0.3, 0.4, 0.2]
-        )
-    )
+            sla = slas,
+            ldmc = ldmcs,
+            μ = μs
+        ))
+
+    return p
 end
 
 """
@@ -51,10 +74,12 @@ end
 
 Initialise the difference equation problem.
 """
-function discrete_prob(; tmax=100)
+function discrete_prob(; tmax=100, input_file)
+    global PAR = load(input_file, "PAR")
+    
     p = initialize_parameters()
 
-    return DiscreteProblem(
+    return prob = DiscreteProblem(
         one_day!,
         initial_conditions(p),
         (0, tmax),
