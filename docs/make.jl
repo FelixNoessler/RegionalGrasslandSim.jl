@@ -1,7 +1,7 @@
 ####### build the documentation locally
 # cd RegionalGrasslandSim
 # julia --project=docs/ --startup-file=no
-# using Revise; import Pkg; Pkg.instantiate(); Pkg.develop(path="."); Pkg.develop(path="../RegionalGrasslandVis/"); include("docs/make.jl")
+# using Revise; import Pkg; Pkg.instantiate(); Pkg.develop(path="RegionalGrasslandVis/"); Pkg.develop(path="RegionalGrasslandSim/"); include("docs/make.jl")
 ## to redo the documentation:
 # include("docs/make.jl")
 ## to clean everything for commits/push:

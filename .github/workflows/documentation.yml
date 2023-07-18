@@ -17,10 +17,8 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: '1.9'
-      - name: Clone RegionalGrasslandVis
-        run: git clone https://github.com/FelixNoessler/RegionalGrasslandVis.jl.git RegionalGrasslandVis
       - name: Install dependencies
-        run: julia --project=docs/ -e 'using Pkg; Pkg.develop(path=joinpath(pwd(), "RegionalGrasslandVis/")); Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+        run: julia --project=docs/ -e 'using Pkg; Pkg.develop(path="RegionalGrasslandVis/"); Pkg.develop(path="RegionalGrasslandSim/"); Pkg.instantiate()'
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # If authenticating with GitHub Actions token
