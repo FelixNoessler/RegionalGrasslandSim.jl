@@ -12,8 +12,20 @@ include("traits/Traits.jl")
 
 export scenario_input
 
+function __init__()
+    @info "Loading data of RegionalGrasslandScenario"
+    datapath = "../RegionalGrasslandData"
+
+    AirTemperature.load_data(datapath)
+    PAR.load_data(datapath)
+    Precipitation.load_data(datapath)
+    PET.load_data(datapath)
+    Traits.load_data(datapath)
+
+    return nothing
+end
+
 function scenario_input(;
-        datapath,
         explo, nyears, nspecies,
         inf_p,
         npatches=1,
@@ -29,27 +41,19 @@ function scenario_input(;
         nutrient_reduction)
 
     temp_data = AirTemperature.predict_temperature(;
-        datapath,
         nyears,
         explo);
     par_data = PAR.predict_par(;
-        datapath,
         explo,
         nyears);
     precipitation_data = Precipitation.predict_precipitation(;
-        datapath,
         nyears,
         explo)
     evapo_data = PET.predict_pet(;
-        datapath,
         explo,
         nyears);
-    trait_data = Traits.random_traits(
-        nspecies;
-        datapath);
-    relative_trait_data = Traits.relative_traits(;
-        trait_data,
-        datapath)
+    trait_data = Traits.random_traits(nspecies;);
+    relative_trait_data = Traits.relative_traits(;trait_data)
     grazing_data = Landuse.grazing_input(;
         grazing_start,
         grazing_end,

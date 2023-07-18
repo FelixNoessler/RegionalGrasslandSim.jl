@@ -27,15 +27,15 @@ struct DataTables
 end
 
 function __init__()
+    @info "Loading data of RegionalGrasslandValid"
     datapath = "../RegionalGrasslandData"
-    load_tables(datapath)
-    Traits.load_gm_data(datapath)
+    load_data(datapath)
+    Traits.load_data(datapath)
 end
 
 VIP_plots = ["$(explo)0$i" for i in 1:9 for explo in ["HEG", "SEG", "AEG"]];
 
-function load_tables(datapath)
-    @info "Loading data of RegionalGrasslandValid"
+function load_data(datapath)
 
     ########### validation data
     soilwater_df = CSV.read(
@@ -194,7 +194,7 @@ function validation_input(;
     ### ----------------- traits
     traits = Traits.random_traits(nspecies;);
     sort!(traits, :SLA)
-    relative_traits = Traits.calc_relativetraits(; trait_data=traits)
+    relative_traits = Traits.relative_traits(; trait_data=traits)
 
     ### ----------------- mowing
     mowing_day = [mow_sub[year, "MowingDay$i"] for year in 1:nyears, i in 1:5]
@@ -363,29 +363,30 @@ function loglikelihood_model(sim::Module;
     # if iszero(biomass_sum[end])
     #     return -Inf
     # end
-    # sim_biomass = biomass_sum[data.biomass_t]
 
-    f = 1825 .> data.measured_biomass_t .> 0
-    sim_biomass = biomass_sum[data.measured_biomass_t[f]]
+    # f = 0 .< data.measured_biomass_t .< 1825
+    # sim_biomass = biomass_sum[data.measured_biomass_t[f]]
+    # biomass_d = MvNormal(sim_biomass, inf_p.sigma_biomass * I)
+    # ll_biomass = logpdf(biomass_d, data.measured_biomass[f])
+
+    sim_biomass = biomass_sum[data.biomass_t]
     biomass_d = MvNormal(sim_biomass, inf_p.sigma_biomass * I)
-    # ll_biomass = logpdf(biomass_d, data.biomass)
-    ll_biomass = logpdf(biomass_d, data.measured_biomass[f])
-
+    ll_biomass = logpdf(biomass_d, data.biomass)
 
     ###### evaporation
-    # ll_evaporation = 0.0
-    # evapo_index = .! ismissing.(data.evaporation)
-    # if ! all(iszero.(evapo_index))
-    #     sim_evaporation = ustrip.(sol.evaporation[2:end])[1+365*inityears:end][evapo_index]
-    #     data_evaporation = float.(data.evaporation[evapo_index])
-    #     evaporation_d = MvNormal(sim_evaporation, inf_p.sigma_evaporation * I)
-    #     ll_evaporation = logpdf(evaporation_d, data_evaporation)
-    # end
+    ll_evaporation = 0.0
+    evapo_index = .! ismissing.(data.evaporation)
+    if ! all(iszero.(evapo_index))
+        sim_evaporation = ustrip.(sol.evaporation[2:end])[1+365*inityears:end][evapo_index]
+        data_evaporation = float.(data.evaporation[evapo_index])
+        evaporation_d = MvNormal(sim_evaporation, inf_p.sigma_evaporation * I)
+        ll_evaporation = logpdf(evaporation_d, data_evaporation)
+    end
 
     # ###### soil moisture
-    # sim_soilmoisture = ustrip.(sol.water)[2:end][1+365*inityears:end] ./ sol.p.site.root_depth .* inf_p.moisture_conv
-    # soilmoisture_d = MvNormal(sim_soilmoisture, inf_p.sigma_soilmoisture * I)
-    # ll_soilmoisture = logpdf(soilmoisture_d, data.soil_moisture)
+    sim_soilmoisture = ustrip.(sol.water)[2:end][1+365*inityears:end] ./ sol.p.site.root_depth .* inf_p.moisture_conv
+    soilmoisture_d = MvNormal(sim_soilmoisture, inf_p.sigma_soilmoisture * I)
+    ll_soilmoisture = logpdf(soilmoisture_d, data.soil_moisture)
 
     ###### total log likelihood
     ll = ll_biomass #+ ll_evaporation + ll_soilmoisture

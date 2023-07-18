@@ -3,7 +3,23 @@ module AirTemperature
 using JLD2
 using Distributions
 using Unitful
-# using LinearAlgebra
+
+
+function load_data(datapath)
+    hai_samples = load("$datapath/scenarios/air_temp.jld2", "HAI")
+    alb_samples = load("$datapath/scenarios/air_temp.jld2", "ALB")
+    sch_samples = load("$datapath/scenarios/air_temp.jld2", "SCH")
+    freqs = load("$datapath/scenarios/air_temp.jld2", "freqs")
+
+    global posterior = (;
+        HAI=hai_samples,
+        ALB=alb_samples,
+        SCH=sch_samples,
+        freqs=freqs
+    )
+
+    return nothing
+end
 
 function create_cyclic_effect(
     d;
@@ -35,18 +51,13 @@ function temp_ar_predict(; y_start, tend, θ, c)
     return y
 end
 
-function predict_temperature(; nyears, explo, datapath)
+function predict_temperature(; nyears, explo)
     tend = nyears * 365
 
-    posterior_samples, freqs = load(
-        "$datapath/scenarios/air_temp.jld2",
-        explo,
-        "freqs")
-
     posterior_pred = temp_ar_predict(;
-        θ=vec(Array(sample(posterior_samples,1))),
+        θ=vec(Array(sample(posterior[Symbol(explo)],1))),
         tend,
-        c = create_cyclic_effect(1:tend; freqs),
+        c = create_cyclic_effect(1:tend; freqs=posterior[:freqs]),
         y_start = 0.0
     )
 

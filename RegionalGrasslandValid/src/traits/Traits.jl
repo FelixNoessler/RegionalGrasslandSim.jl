@@ -12,10 +12,12 @@ struct GM
     ϕ
 end
 
-function load_gm_data(datapath)
+function load_data(datapath)
     ########### parameters for gaussian mixture model
     μ, Σ, ϕ = load("$datapath/input/traits_gaussian_mixture.jld2", "μ", "Σ", "ϕ")
     global gm = GM(μ, Σ, ϕ)
+
+    return nothing
 end
 
 

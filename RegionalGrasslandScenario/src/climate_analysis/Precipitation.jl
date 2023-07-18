@@ -10,6 +10,20 @@ using LazyArrays
 using JLD2
 using Unitful
 
+function load_data(datapath)
+    hai_samples = load("$datapath/scenarios/prec.jld2", "HAI")
+    alb_samples = load("$datapath/scenarios/prec.jld2", "ALB")
+    sch_samples = load("$datapath/scenarios/prec.jld2", "SCH")
+
+    global posterior = (;
+        HAI=hai_samples,
+        ALB=alb_samples,
+        SCH=sch_samples,
+    )
+
+    return nothing
+end
+
 function transform_t(; t, original_t=t)
     t_min, t_max = extrema(original_t)
     return (t .- t_min) ./ (t_max - t_min)
@@ -90,19 +104,16 @@ invlogit(x::Real) = exp(x)/(1+exp(x))
 end
 
 function predict_precipitation(;
-    datapath,
     nyears,
     explo)
-
-    chains = load(
-        "$datapath/scenarios/prec.jld2",
-        explo)
 
     t_pred = 1:365
     cyclic_pred = create_cyclic_effect(t_pred; freqs = [1,2,3])
     m_pred = precip_model(cyclic_pred);
 
-    pred_matrix = Array(Turing.predict(m_pred, sample(chains,nyears)))
+    pred_matrix = Array(Turing.predict(
+        m_pred,
+        sample(posterior[Symbol(explo)], nyears)))
     pred_vector = reshape(pred_matrix', :)
 
     return pred_vector .* u"mm / d"

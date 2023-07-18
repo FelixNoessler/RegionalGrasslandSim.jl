@@ -1,4 +1,4 @@
-function dashboard(sim, valid, scen; datapath)
+function dashboard(sim, valid, scen;)
     fig = Figure(; resolution=(1700, 900))
 
     top_menu = fig[1,1:2] = GridLayout()
@@ -191,8 +191,7 @@ function dashboard(sim, valid, scen; datapath)
     p_lower = [0.1,    0.1, 0.1, 0.1, 1e-6,  0,  0.0,   50.0,  500,  10, 0.0, 0.0, 0.0, 0.0]
     p_upper = [100000, 100, 100, 1.2, 1e-1,  10, 0.01,  200.0, 5000,  150, 1.0, 1.0, 1.0, 1.0]
     p_start = [
-        82649.94, 9.590659, 0.0144827, 0.5530409, 0.07826682, 3.755483, 0.00347689,
-        184.2303, 2911.013, 64.26925, 0.9826136, 0.919179, 0.812613, 0.3877618, 3446.606, 3613.506, -166.9]
+        729818.181240058, 38.84303294678368, 81.597956889167, 1.040678730679339, 0.45363012509969164, 34.36001350878733, 0.001682218304114495, 142.23173403268342, 535.1166461291608, 22.76107958993106, 0.2841526214673337, 0.17717712862685397, 0.5894201401442405, 0.802207622261675]
     param_slider_prep = [(
         label=parameter_names[i],
         range=p_lower[i]:0.0001:p_upper[i],
@@ -245,6 +244,8 @@ function dashboard(sim, valid, scen; datapath)
             input_obj = nothing
 
             if use_simulated_data
+                plotID = nothing
+
                 # ------------- mowing
                 mowing_selected = [toggle.active.val for toggle in toggles_mowing]
                 mowing_dates = [tb.stored_string.val for tb in tb_mowing_date][mowing_selected]
@@ -279,7 +280,6 @@ function dashboard(sim, valid, scen; datapath)
 
 
                 input_obj = scen.scenario_input(;
-                    datapath,
                     inf_p,
                     nyears=nyears.val,
                     nspecies=nspecies.val,
@@ -321,8 +321,6 @@ function dashboard(sim, valid, scen; datapath)
             update_plots(; sol, menu_color, menu_abiotic, axes, cb, plotID, valid)
         end
     end
-
-
 
     run_button.clicks[] = 1
 

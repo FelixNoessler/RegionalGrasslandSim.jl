@@ -6,17 +6,31 @@ using DataFrames
 using JLD2
 using LinearAlgebra
 
+struct GM
+    μ
+    Σ
+    ϕ
+end
+
+function load_data(datapath)
+    ########### parameters for gaussian mixture model
+    μ, Σ, ϕ = load("$datapath/input/traits_gaussian_mixture.jld2", "μ", "Σ", "ϕ")
+    global gm = GM(μ, Σ, ϕ)
+
+    return nothing
+end
+
+
 function inverse_logit(x)
     return exp(x)/(1+exp(x))
 end
 
-function random_traits(n; datapath, back_transform=true)
-    μ, Σ, ϕ = load("$datapath/input/traits_gaussian_mixture.jld2", "μ", "Σ", "ϕ")
+function random_traits(n; back_transform=true)
 
     m = MixtureModel([
-        MvNormal(μ[1, :], Hermitian(Σ[1, :, :])),
-        MvNormal(μ[2, :], Hermitian(Σ[2, :, :]))],
-        ϕ
+        MvNormal(gm.μ[1, :], Hermitian(gm.Σ[1, :, :])),
+        MvNormal(gm.μ[2, :], Hermitian(gm.Σ[2, :, :]))],
+        gm.ϕ
     )
 
     log_logit_traits = rand(m, n)
@@ -66,12 +80,12 @@ function random_traits(n; datapath, back_transform=true)
     end
 end
 
-function relative_traits(; trait_data, datapath)
+function relative_traits(; trait_data)
     trait_data = ustrip.(trait_data)
     nspecies, ntraits = size(trait_data)
 
     #### calculate extrema from more data
-    many_traits = random_traits(100; datapath)
+    many_traits = random_traits(100;)
     many_traits = Matrix(ustrip.(many_traits))
 
     for i in 1:ntraits
