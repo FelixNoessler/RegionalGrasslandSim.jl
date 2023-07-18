@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1398.6838"
+   height="673.06683"
+   viewBox="0 0 1398.6838 673.06683"
+   version="1.1"
+   id="svg5"
+   inkscape:export-filename="bitmap.png"
+   inkscape:export-xdpi="300"
+   inkscape:export-ydpi="300"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   sodipodi:docname="model_scatch.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     showgrid="false"
+     inkscape:zoom="0.48984376"
+     inkscape:cx="807.4003"
+     inkscape:cy="412.37639"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     showguides="false" />
+  <defs
+     id="defs2">
+    <marker
+       style="overflow:visible"
+       id="marker2197"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="TriangleStart"
+       markerWidth="5.3244081"
+       markerHeight="6.155385"
+       viewBox="0 0 5.3244081 6.1553851"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.5)"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         id="path2195" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="TriangleStart"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="TriangleStart"
+       markerWidth="5.3244081"
+       markerHeight="6.155385"
+       viewBox="0 0 5.3244081 6.1553851"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.5)"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         id="path135" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="TriangleStart-7"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="TriangleStart"
+       markerWidth="5.3244081"
+       markerHeight="6.155385"
+       viewBox="0 0 5.3244081 6.1553851"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.5)"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         id="path135-1" />
+    </marker>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-446.81781,-515.97775)">
+    <path
+       style="fill:#00805b;fill-opacity:0.482234;stroke-width:0.732087"
+       d="M 857.11101,670.02454 673.91854,863.34112 769.8765,972.1617 1069.9632,924.79275 977.49462,795.48828 Z"
+       id="path505"
+       inkscape:export-filename="..\..\..\..\Desktop\path505.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
+    <path
+       style="fill:#00805b;fill-opacity:0.482234"
+       d="m 1312.8979,604.6976 44.9122,159.23445 c 0,0 285.8055,102.07336 314.386,106.1563 28.5806,4.08293 71.4514,-102.07337 67.3684,-112.2807 -4.0829,-10.20734 -200.0638,-224.56143 -200.0638,-224.56143 z"
+       id="path507" />
+    <path
+       style="fill:#00805b;fill-opacity:0.482234;stroke-width:0.771636"
+       d="m 1212.4179,904.76838 c 0,0 -51.9333,180.42492 -48.6875,194.18612 3.2458,13.7612 163.9145,84.0964 170.4062,88.6834 6.4916,4.5871 223.9623,-1.529 209.356,-25.9934 -14.6062,-24.4644 -40.5729,-136.0832 -56.802,-155.9605 -16.2292,-19.8773 -43.8187,-65.74805 -76.2771,-67.27708 -32.4582,-1.52902 -197.9956,-33.63854 -197.9956,-33.63854 z"
+       id="path509" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3.4;stroke-opacity:1;marker-end:url(#TriangleStart)"
+       d="m 976.21286,939.97436 c 69.37724,101.90474 93.17264,89.89844 178.27424,115.04864"
+       id="path1544"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3.4;stroke-opacity:1;marker-end:url(#TriangleStart)"
+       d="m 1005.6249,829.18302 c 64.4311,-42.90427 220.2444,-101.7637 312.1621,-120.20967"
+       id="path2310"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3.4;stroke-opacity:1;marker-end:url(#TriangleStart)"
+       d="m 1253.9968,908.88633 c -29.1407,-79.8149 -96.0867,-41.31194 -182.2371,-6.43137"
+       id="path2322"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3.4;stroke-opacity:1;marker-end:url(#TriangleStart-7)"
+       d="M 1355.4439,762.18252 C 1294.5455,815.53375 1157.588,867.02853 1071.4376,901.9091"
+       id="path2322-0"
+       sodipodi:nodetypes="cc" />
+    <text
+       xml:space="preserve"
+       style="font-size:32px;font-family:'Arial Nova';-inkscape-font-specification:'Arial Nova';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:3.4;stroke-opacity:1"
+       x="1114.6411"
+       y="811.48322"
+       id="text3122"><tspan
+         sodipodi:role="line"
+         id="tspan3120"
+         x="1114.6411"
+         y="811.48322"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;fill:#000000;fill-opacity:1;stroke:none">dispersal</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:32px;font-family:'Arial Nova';-inkscape-font-specification:'Arial Nova';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:3.4;stroke-opacity:1"
+       x="1436.1676"
+       y="694.11536"
+       id="text3122-7"><tspan
+         sodipodi:role="line"
+         id="tspan3120-5"
+         x="1436.1676"
+         y="694.11536"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;fill:#000000;fill-opacity:1;stroke:none">grassland 1</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:32px;font-family:'Arial Nova';-inkscape-font-specification:'Arial Nova';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:3.4;stroke-opacity:1"
+       x="763.95874"
+       y="870.08612"
+       id="text3122-7-1"><tspan
+         sodipodi:role="line"
+         id="tspan3120-5-4"
+         x="763.95874"
+         y="870.08612"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;fill:#000000;fill-opacity:1;stroke:none">grassland 2</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:32px;font-family:'Arial Nova';-inkscape-font-specification:'Arial Nova';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:3.4;stroke-opacity:1"
+       x="1259.0914"
+       y="1064.9634"
+       id="text3122-7-1-0"><tspan
+         sodipodi:role="line"
+         id="tspan3120-5-4-2"
+         x="1259.0914"
+         y="1064.9634"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;fill:#000000;fill-opacity:1;stroke:none">grassland 3</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:32px;font-family:'Arial Nova';-inkscape-font-specification:'Arial Nova';fill:#007e5b;fill-opacity:0.904478;stroke:#000000;stroke-width:3.4;stroke-opacity:1"
+       x="1555.2061"
+       y="1167.7815"
+       id="text3240"><tspan
+         sodipodi:role="line"
+         id="tspan3238"
+         x="1555.2061"
+         y="1167.7815"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;fill:#007e5b;fill-opacity:0.904478;stroke:none">biomass of species <tspan
+   style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Noto Serif';-inkscape-font-specification:'Noto Serif Italic'"
+   id="tspan10251">i</tspan></tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:32px;font-family:'Arial Nova';-inkscape-font-specification:'Arial Nova';fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:3.4;stroke-opacity:1"
+       x="444.77094"
+       y="711.38025"
+       id="text5567"><tspan
+         sodipodi:role="line"
+         id="tspan5565"
+         x="444.77094"
+         y="711.38025"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;fill:#000000;fill-opacity:1;stroke:none">local competition for </tspan><tspan
+         sodipodi:role="line"
+         x="444.77094"
+         y="751.38025"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;fill:#000000;fill-opacity:1;stroke:none"
+         id="tspan5569">light, nutrients &amp; water</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32px;font-family:Arial;-inkscape-font-specification:Arial;fill:#3b4fc5;fill-opacity:0.841791;stroke:none;stroke-width:3.4;stroke-opacity:1"
+       x="715.78101"
+       y="1025.0729"
+       id="text8359"><tspan
+         sodipodi:role="line"
+         id="tspan8357"
+         x="715.78101"
+         y="1025.0729"
+         style="fill:#14237d;fill-opacity:0.841791">soil water</tspan><tspan
+         sodipodi:role="line"
+         x="715.78101"
+         y="1065.0729"
+         style="fill:#c54239;fill-opacity:0.841791"
+         id="tspan8463">nutrients</tspan></text>
+    <path
+       style="fill:none;fill-opacity:0.841791;stroke:#e3d207;stroke-width:3.4;stroke-opacity:1;marker-end:url(#marker2197)"
+       d="m 890.23729,517.54077 -66.33434,28.37382 71.8374,19.81663 -39.70618,26.21948 20.08912,9.87823 -6.28556,34.51047"
+       id="path490" />
+    <text
+       xml:space="preserve"
+       style="font-size:32px;font-family:'Arial Nova';-inkscape-font-specification:'Arial Nova';fill:#e3d207;fill-opacity:1;stroke:#000000;stroke-width:3.4;stroke-opacity:1"
+       x="897.52594"
+       y="612.22437"
+       id="text2369"><tspan
+         sodipodi:role="line"
+         id="tspan2367"
+         x="897.52594"
+         y="612.22437"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;fill:#c1b306;fill-opacity:1;stroke:none">light</tspan></text>
+  </g>
+</svg>
