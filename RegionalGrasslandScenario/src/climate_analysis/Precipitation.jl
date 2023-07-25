@@ -98,7 +98,8 @@ invlogit(x::Real) = exp(x)/(1+exp(x))
     ϕ₀ = invlogit.(αϕ₀ .+ c * βϕ₀)
 
     ### likelihood
-    y ~ arraydist(LazyArray(@~ ZeroLogNormal.(ϕ₀, μ, σ)))
+    # y ~ arraydist(LazyArray(@~ ZeroLogNormal.(ϕ₀, μ, σ)))
+    y ~ arraydist(ZeroLogNormal.(ϕ₀, μ, σ))
 
     return (ϕ₀=ϕ₀, μ=μ)  # extract with generated_quantities
 end
