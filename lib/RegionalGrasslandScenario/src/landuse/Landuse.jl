@@ -4,11 +4,9 @@ using Dates
 using Unitful
 
 function fertilisation_input(;
-        dates,
-        nutrient_inputs,
-        nyears
-    )
-
+    dates,
+    nutrient_inputs,
+    nyears)
     fertilisation = zeros(365)
 
     for i in eachindex(dates)
@@ -21,9 +19,7 @@ end
 
 function mowing_input(;
     dates,
-    nyears
-)
-
+    nyears)
     mowing_event = fill(false, 365)
 
     for i in eachindex(dates)
@@ -34,13 +30,11 @@ function mowing_input(;
     return repeat(mowing_event, nyears)
 end
 
-
 function grazing_input(;
-        grazing_start,
-        grazing_end,
-        grazing_intensity,
-        nyears)
-
+    grazing_start,
+    grazing_end,
+    grazing_intensity,
+    nyears)
     grazing_density = fill(0.0u"ha ^ -1", 365)
 
     for i in eachindex(grazing_start)
@@ -48,8 +42,8 @@ function grazing_input(;
         end_date = Date(grazing_end[i], dateformat"mm-dd")
         livestock_density = grazing_intensity[i]
 
-        grazing_density[dayofyear(start_date) : dayofyear(end_date)] .=
-            livestock_density .* u"ha ^ -1"
+        grazing_density[dayofyear(start_date):dayofyear(end_date)] .= livestock_density .*
+                                                                      u"ha ^ -1"
     end
 
     return repeat(grazing_density, nyears)

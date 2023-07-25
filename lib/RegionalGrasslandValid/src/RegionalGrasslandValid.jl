@@ -26,71 +26,49 @@ end
 
 function load_data(datapath)
     ########### validation data
-    soilmoisture= CSV.read(
-        "$datapath/validation/soilmoisture.csv",
+    soilmoisture = CSV.read("$datapath/validation/soilmoisture.csv",
         DataFrame)
 
-    evaporation = CSV.read(
-        "$datapath/validation/evaporation.csv",
+    evaporation = CSV.read("$datapath/validation/evaporation.csv",
         DataFrame)
 
-    satbiomass = CSV.read(
-        "$datapath/validation/sat_biomass.csv",
-        DataFrame
-    )
+    satbiomass = CSV.read("$datapath/validation/sat_biomass.csv",
+        DataFrame)
 
-    measuredveg = CSV.read(
-        "$datapath/validation/measured_veg.csv",
-        DataFrame
-    )
+    measuredveg = CSV.read("$datapath/validation/measured_veg.csv",
+        DataFrame)
 
     valid = (;
         soilmoisture,
         evaporation,
         satbiomass,
-        measuredveg
-    )
+        measuredveg)
 
     ########### input data
-    initbiomass = CSV.read(
-        "$datapath/input/init_biomass.csv",
-        DataFrame
-    )
-
-    clim = CSV.read(
-        "$datapath/input/temperature_precipitation.csv",
+    initbiomass = CSV.read("$datapath/input/init_biomass.csv",
         DataFrame)
 
-    pet = CSV.read(
-        "$datapath/input/PET.csv",
-        DataFrame
-    )
+    clim = CSV.read("$datapath/input/temperature_precipitation.csv",
+        DataFrame)
 
-    par = CSV.read(
-        "$datapath/input/par.csv",
-        DataFrame
-    )
+    pet = CSV.read("$datapath/input/PET.csv",
+        DataFrame)
+
+    par = CSV.read("$datapath/input/par.csv",
+        DataFrame)
 
     ### mean index from 2011, 2014, 20117, 2021
-    nut = CSV.read(
-        "$datapath/input/soilnutrients.csv",
-        DataFrame
-    )
+    nut = CSV.read("$datapath/input/soilnutrients.csv",
+        DataFrame)
 
-    soil = CSV.read(
-        "$datapath/input/soilwater.csv",
-        DataFrame
-    )
+    soil = CSV.read("$datapath/input/soilwater.csv",
+        DataFrame)
 
-    mow = CSV.read(
-        "$datapath/input/mowing.csv",
-        DataFrame
-    )
+    mow = CSV.read("$datapath/input/mowing.csv",
+        DataFrame)
 
-    graz = CSV.read(
-        "$datapath/input/grazing.csv",
-        DataFrame
-    )
+    graz = CSV.read("$datapath/input/grazing.csv",
+        DataFrame)
 
     input = (;
         initbiomass,
@@ -109,7 +87,6 @@ function load_data(datapath)
     return nothing
 end
 
-
 function get_plottingdata(sim::Module;
     inf_p,
     plotID,
@@ -120,7 +97,7 @@ function get_plottingdata(sim::Module;
     nyears = length(startyear:endyear)
     input_obj = validation_input(;
         plotID, nyears, inf_p)
-    sol = sim.solve_prob(; input_obj);
+    sol = sim.solve_prob(; input_obj)
 
     ########################## Measured data
     data = get_validation_data(; plotID)

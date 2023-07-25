@@ -26,69 +26,63 @@ function __init__()
 end
 
 function scenario_input(;
-        explo, nyears, nspecies,
-        inf_p,
-        npatches=1,
-        mowing_days=[Vector{Int64}() for _ in 1:nyears],
-        mowing_heights=[Vector{Int64}() for _ in 1:nyears],
-        nutrient_index,
-        WHC,
-        PWP,
-        initbiomass = 500u"kg/ha",
-        grazing_start=[],
-        grazing_end=[],
-        grazing_intensity=[],
-        water_reduction,
-        nutrient_reduction)
-
+    explo, nyears, nspecies,
+    inf_p,
+    npatches = 1,
+    mowing_days = [Vector{Int64}() for _ in 1:nyears],
+    mowing_heights = [Vector{Int64}() for _ in 1:nyears],
+    nutrient_index,
+    WHC,
+    PWP,
+    initbiomass = 500u"kg/ha",
+    grazing_start = [],
+    grazing_end = [],
+    grazing_intensity = [],
+    water_reduction,
+    nutrient_reduction)
     temp_data = AirTemperature.predict_temperature(;
         nyears,
-        explo);
+        explo)
     par_data = PAR.predict_par(;
         explo,
-        nyears);
+        nyears)
     precipitation_data = Precipitation.predict_precipitation(;
         nyears,
         explo)
     evapo_data = PET.predict_pet(;
         explo,
-        nyears);
-    trait_data = Traits.random_traits(nspecies;);
-    relative_trait_data = Traits.relative_traits(;trait_data)
+        nyears)
+    trait_data = Traits.random_traits(nspecies;)
+    relative_trait_data = Traits.relative_traits(; trait_data)
     grazing_data = Landuse.grazing_input(;
         grazing_start,
         grazing_end,
         grazing_intensity,
-        nyears
-    )
+        nyears)
 
-    return (
-        env_data = (;
-            PAR=par_data,
-            precipitation=precipitation_data,
-            temperature=temp_data,
-            temperature_sum=AirTemperature.yearly_temp_cumsum(temp_data),
-            PET=evapo_data,
-        ),
+    return (env_data = (;
+            PAR = par_data,
+            precipitation = precipitation_data,
+            temperature = temp_data,
+            temperature_sum = AirTemperature.yearly_temp_cumsum(temp_data),
+            PET = evapo_data),
         inf_p,
-        site=(;
+        site = (;
             nutrient_index,
-            WHC=WHC * u"mm",
-            PWP=PWP * u"mm",
-            initbiomass
-        ),
-        traits=trait_data,
-        relative_traits=relative_trait_data,
+            WHC = WHC * u"mm",
+            PWP = PWP * u"mm",
+            initbiomass),
+        traits = trait_data,
+        relative_traits = relative_trait_data,
         mowing_days,
         mowing_heights,
-        grazing=grazing_data,
+        grazing = grazing_data,
         nutrient_index,
         nspecies,
         npatches,
         water_reduction,
         nutrient_reduction,
-        nyears
-    )
+        nyears)
 end
 
 end # module RegionalGrasslandScenario

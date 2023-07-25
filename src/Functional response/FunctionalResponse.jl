@@ -17,13 +17,12 @@ availability.
 """
 function amc_nut_response(;
     mycorrhizal_colon,
-    max_right_upper_bound=1,
-    min_right_upper_bound=0.7,
-    max_AMC_half_response=0.6,
-    min_AMC_half_response=0.05,
-    mid_AMC=0.35,
-    slope=10
-)
+    max_right_upper_bound = 1,
+    min_right_upper_bound = 0.7,
+    max_AMC_half_response = 0.6,
+    min_AMC_half_response = 0.05,
+    mid_AMC = 0.35,
+    slope = 10)
 
     #### check parameter
     in_range = 0.0 .<= mycorrhizal_colon .<= 1.0
@@ -67,17 +66,15 @@ function srsa_response(;
     max_right_upper_bound = 1,
     min_SRSA_half_response = 0.05,
     max_SRSA_half_response = 0.6)
-
     denominator = @. (1 + exp(-slope_func_parameters * (SRSA_above - mid_SRSA_above)))
 
     K = @. max_right_upper_bound +
-            (min_right_upper_bound - max_right_upper_bound) / denominator
+           (min_right_upper_bound - max_right_upper_bound) / denominator
     x0 = @. max_SRSA_half_response +
             (min_SRSA_half_response - max_SRSA_half_response) / denominator
 
     return K, x0
 end
-
 
 """
     sla_water_response(;
@@ -90,14 +87,13 @@ end
 
 """
 function sla_water_response(;
-        SLA,
-        mid_SLA = 0.025,
-        slope_func_parameter = 75,
-        min_SLA_half_response = -0.8,
-        max_SLA_half_response = 0.8
-    )
-
-    x0 = @. min_SLA_half_response + (max_SLA_half_response - min_SLA_half_response) /
+    SLA,
+    mid_SLA = 0.025,
+    slope_func_parameter = 75,
+    min_SLA_half_response = -0.8,
+    max_SLA_half_response = 0.8)
+    x0 = @. min_SLA_half_response +
+            (max_SLA_half_response - min_SLA_half_response) /
             (1 + exp(-slope_func_parameter * (SLA - mid_SLA)))
 
     return x0

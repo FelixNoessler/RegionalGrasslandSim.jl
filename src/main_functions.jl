@@ -20,11 +20,10 @@ function one_day!(;
     sen,
     p,
     t)
-
     day_of_year = t - ((t - 1) ÷ 365 * 365)
     year = 1 + (t - 1) ÷ 365
 
-    for pa in 1:p.npatches
+    for pa in 1:(p.npatches)
         # --------------------- biomass dynamics
         ### this line is needed because it is possible
         ## that there are numerical errors
@@ -50,58 +49,59 @@ function one_day!(;
                 days_since_last_mowing = 200
 
                 if last_day_index > 0
-                    days_since_last_mowing = day_of_year - p.mowing_days[year][last_day_index][1]
+                    days_since_last_mowing = day_of_year -
+                                             p.mowing_days[year][last_day_index][1]
                 end
 
                 mown_biomass = Growth.mowing(;
                     mowing_height,
                     days_since_last_mowing,
-                    CH=p.species.CH,
-                    biomass=patch_biomass,
-                    mowing_mid_days=p.inf_p.mowing_mid_days)
+                    CH = p.species.CH,
+                    biomass = patch_biomass,
+                    mowing_mid_days = p.inf_p.mowing_mid_days)
                 defoliation += mown_biomass
             end
 
             # -------------- grazing
             grazed_biomass = Growth.grazing(;
-                LD=p.grazing[t],
-                biomass=patch_biomass,
-                ρ=p.species.ρ,
-                nspecies=p.nspecies,
-                grazing_half_factor=p.inf_p.grazing_half_factor)
+                LD = p.grazing[t],
+                biomass = patch_biomass,
+                ρ = p.species.ρ,
+                nspecies = p.nspecies,
+                grazing_half_factor = p.inf_p.grazing_half_factor)
             defoliation += grazed_biomass
 
             trampled_biomass = Growth.trampling(;
-                LD=p.grazing[t],
-                biomass=patch_biomass,
-                CH=p.species.CH,
-                nspecies=p.nspecies,
-                trampling_factor=p.inf_p.trampling_factor)
+                LD = p.grazing[t],
+                biomass = patch_biomass,
+                CH = p.species.CH,
+                nspecies = p.nspecies,
+                trampling_factor = p.inf_p.trampling_factor)
             defoliation += trampled_biomass
 
             # -------------- growth
             act_growth, LAI_tot = Growth.growth(;
-                nspecies=p.nspecies,
-                fun_response=p.species.fun_response,
-                trait_similarity=p.trait_similarity,
-                below_competition_strength=p.inf_p.below_competition_strength,
-                SLA=p.species.SLA,
-                CH=p.species.CH,
-                biomass=patch_biomass,
-                PAR=p.env_data.PAR[t],
-                WR=u_water[pa],
-                WHC=p.site.WHC,
-                PWP=p.site.PWP,
-                nutrients=p.site.nutrient_index,
-                PET=p.env_data.PET[t],
-                T=p.env_data.temperature[t],
-                ST=p.env_data.temperature_sum[t],
-                water_red=p.water_reduction,
-                nutrient_red=p.nutrient_reduction,
-                max_SRSA_water_reduction=p.inf_p.max_SRSA_water_reduction,
-                max_SLA_water_reduction=p.inf_p.max_SLA_water_reduction,
-                max_AMC_nut_reduction=p.inf_p.max_AMC_nut_reduction,
-                max_SRSA_nut_reduction=p.inf_p.max_SRSA_nut_reduction)
+                nspecies = p.nspecies,
+                fun_response = p.species.fun_response,
+                trait_similarity = p.trait_similarity,
+                below_competition_strength = p.inf_p.below_competition_strength,
+                SLA = p.species.SLA,
+                CH = p.species.CH,
+                biomass = patch_biomass,
+                PAR = p.env_data.PAR[t],
+                WR = u_water[pa],
+                WHC = p.site.WHC,
+                PWP = p.site.PWP,
+                nutrients = p.site.nutrient_index,
+                PET = p.env_data.PET[t],
+                T = p.env_data.temperature[t],
+                ST = p.env_data.temperature_sum[t],
+                water_red = p.water_reduction,
+                nutrient_red = p.nutrient_reduction,
+                max_SRSA_water_reduction = p.inf_p.max_SRSA_water_reduction,
+                max_SLA_water_reduction = p.inf_p.max_SLA_water_reduction,
+                max_AMC_nut_reduction = p.inf_p.max_AMC_nut_reduction,
+                max_SRSA_nut_reduction = p.inf_p.max_SRSA_nut_reduction)
 
             if any(act_growth .< 0u"kg / (ha * d)")
                 @error "act_growth below zero: $act_growth" maxlog=10
@@ -112,14 +112,13 @@ function one_day!(;
 
             # -------------- senescence
             sen = Growth.senescence(;
-                                    ST=p.env_data.temperature_sum[t],
-                                    biomass=patch_biomass,
-                                    μ = p.species.μ)
+                ST = p.env_data.temperature_sum[t],
+                biomass = patch_biomass,
+                μ = p.species.μ)
 
         else
             @warn "Sum of patch biomass = 0" maxlog=10
         end
-
 
         # -------------- deterministic
         determin = act_growth .- sen .- defoliation
@@ -134,12 +133,12 @@ function one_day!(;
 
         # --------------------- water dynamics
         water_change, evaporation = Water.change_water_reserve(;
-            WR=u_water[pa],
-            precipitation=p.env_data.precipitation[t],
+            WR = u_water[pa],
+            precipitation = p.env_data.precipitation[t],
             LAI_tot,
-            PET=p.env_data.PET[t],
-            WHC=p.site.WHC,
-            PWP=p.site.PWP)
+            PET = p.env_data.PET[t],
+            WHC = p.site.WHC,
+            PWP = p.site.PWP)
 
         o_evaporation[pa] = evaporation
         du_water[pa] = water_change
@@ -154,8 +153,7 @@ end
 TBW
 """
 function initial_conditions(; initbiomass, npatches, nspecies)
-    u_biomass = fill(
-        initbiomass / nspecies,
+    u_biomass = fill(initbiomass / nspecies,
         npatches,
         nspecies)
     u_water = fill(180.0, npatches)u"mm"
@@ -171,69 +169,61 @@ TBW
 function initialize_parameters(; input_obj)
     #--------- calculate leaf senescence rate μ
     sla = ustrip.(uconvert.(u"cm^2 / g", input_obj.traits.SLA))
-    LL = 10 .^ ( (log10.(sla) .- 2.41) ./ -0.38) .* 365.25 ./ 12 .* u"d"
-    sen_intercept = input_obj.inf_p.senescence_intercept/1000
-    sen_rate = input_obj.inf_p.senescence_rate/1000
+    LL = 10 .^ ((log10.(sla) .- 2.41) ./ -0.38) .* 365.25 ./ 12 .* u"d"
+    sen_intercept = input_obj.inf_p.senescence_intercept / 1000
+    sen_rate = input_obj.inf_p.senescence_rate / 1000
     μ = sen_intercept * u"d^-1" .+ sen_rate .* 1 ./ LL
 
     #--------- grazing parameter ρ
     ρ = ustrip.(input_obj.traits.LNCM)
 
     #--------- functional response
-    myco_nutr_right_bound, myco_nutr_midpoint =
-        FunctionalResponse.amc_nut_response(;
-            mycorrhizal_colon=input_obj.traits.AMC)
+    myco_nutr_right_bound, myco_nutr_midpoint = FunctionalResponse.amc_nut_response(;
+        mycorrhizal_colon = input_obj.traits.AMC)
 
-    srsa_right_bound, srsa_midpoint =
-        FunctionalResponse.srsa_response(;
-        SRSA_above=ustrip.(input_obj.traits.SRSA_above))
+    srsa_right_bound, srsa_midpoint = FunctionalResponse.srsa_response(;
+        SRSA_above = ustrip.(input_obj.traits.SRSA_above))
 
-    sla_water_midpoint =
-        FunctionalResponse.sla_water_response(;
-            SLA=ustrip.(input_obj.traits.SLA)
-    )
+    sla_water_midpoint = FunctionalResponse.sla_water_response(;
+        SLA = ustrip.(input_obj.traits.SLA))
 
     #--------- Distance matrix for below ground competition
     rel_t = input_obj.relative_traits
     trait_similarity = Growth.similarity_matrix(;
-        scaled_traits=hcat(rel_t.SLA, rel_t.SRSA_above, rel_t.AMC))
+        scaled_traits = hcat(rel_t.SLA, rel_t.SRSA_above, rel_t.AMC))
 
     #--------- store everything in one object
     p = (;
-         npatches=input_obj.npatches,
-         nspecies=input_obj.nspecies,
-         species = (;
-                    SLA=input_obj.traits.SLA,
-                    μ,
-                    ρ,
-                    LL,
-                    AMC = input_obj.traits.AMC,
-                    SRSA_above = input_obj.traits.SRSA_above,
-                    LA = input_obj.traits.LA,
-                    CH = input_obj.traits.CH,
-                    LNCM = input_obj.traits.LNCM,
-                    fun_response = (;
-                        myco_nutr_right_bound,
-                        myco_nutr_midpoint,
-                        srsa_right_bound,
-                        srsa_midpoint,
-                        sla_water_midpoint
-                    )
-         ),
-         inf_p=input_obj.inf_p,
-         site=input_obj.site,
-         trait_similarity,
-         env_data=input_obj.env_data,
-         mowing_days=input_obj.mowing_days,
-         mowing_heights=input_obj.mowing_heights,
-         grazing=input_obj.grazing,
-         water_reduction=input_obj.water_reduction,
-         nutrient_reduction=input_obj.nutrient_reduction)
+        npatches = input_obj.npatches,
+        nspecies = input_obj.nspecies,
+        species = (;
+            SLA = input_obj.traits.SLA,
+            μ,
+            ρ,
+            LL,
+            AMC = input_obj.traits.AMC,
+            SRSA_above = input_obj.traits.SRSA_above,
+            LA = input_obj.traits.LA,
+            CH = input_obj.traits.CH,
+            LNCM = input_obj.traits.LNCM,
+            fun_response = (;
+                myco_nutr_right_bound,
+                myco_nutr_midpoint,
+                srsa_right_bound,
+                srsa_midpoint,
+                sla_water_midpoint)),
+        inf_p = input_obj.inf_p,
+        site = input_obj.site,
+        trait_similarity,
+        env_data = input_obj.env_data,
+        mowing_days = input_obj.mowing_days,
+        mowing_heights = input_obj.mowing_heights,
+        grazing = input_obj.grazing,
+        water_reduction = input_obj.water_reduction,
+        nutrient_reduction = input_obj.nutrient_reduction)
 
     return p
 end
-
-
 
 """
     solve_prob(; input_obj)
@@ -247,9 +237,9 @@ function solve_prob(; input_obj)
 
     #### initial conditions of the state variables
     u_biomass, u_water = initial_conditions(;
-        nspecies=p.nspecies,
-        npatches=p.npatches,
-        initbiomass=p.site.initbiomass)
+        nspecies = p.nspecies,
+        npatches = p.npatches,
+        initbiomass = p.site.initbiomass)
 
     #### output vectors of the state variables
     u_output_biomass = Array{Quantity{Float64}}(undef, length(ts), p.npatches, p.nspecies)
@@ -266,7 +256,6 @@ function solve_prob(; input_obj)
     #### vectors that store the change of the state variables
     du_biomass = Array{Quantity{Float64}}(undef, p.npatches, p.nspecies)
     du_water = Array{Quantity{Float64}}(undef, p.npatches)
-
 
     #### vectors that are used in the calculations
     defoliation = zeros(p.nspecies)u"kg / (ha * d)"
@@ -295,9 +284,9 @@ function solve_prob(; input_obj)
     u_output_biomass[iszero.(u_output_biomass)] .= 0u"kg / ha"
 
     return (;
-        biomass=u_output_biomass,
-        water=u_output_water,
-        evaporation=o_output_evaporation,
-        t=ts,
-        p=p)
+        biomass = u_output_biomass,
+        water = u_output_water,
+        evaporation = o_output_evaporation,
+        t = ts,
+        p = p)
 end

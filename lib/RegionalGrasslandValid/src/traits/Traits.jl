@@ -7,9 +7,9 @@ using JLD2
 using LinearAlgebra
 
 struct GM
-    μ
-    Σ
-    ϕ
+    μ::Any
+    Σ::Any
+    ϕ::Any
 end
 
 include("traits_output.jl")
@@ -22,18 +22,15 @@ function load_data(datapath)
     return nothing
 end
 
-
 function inverse_logit(x)
-    return exp(x)/(1+exp(x))
+    return exp(x) / (1 + exp(x))
 end
 
-function random_traits(n; back_transform=true)
-
+function random_traits(n; back_transform = true)
     m = MixtureModel([
-        MvNormal(gm.μ[1, :], Hermitian(gm.Σ[1, :, :])),
-        MvNormal(gm.μ[2, :], Hermitian(gm.Σ[2, :, :]))],
-        gm.ϕ
-    )
+            MvNormal(gm.μ[1, :], Hermitian(gm.Σ[1, :, :])),
+            MvNormal(gm.μ[2, :], Hermitian(gm.Σ[2, :, :]))],
+        gm.ϕ)
 
     log_logit_traits = rand(m, n)
 
@@ -48,23 +45,21 @@ function random_traits(n; back_transform=true)
             u"mm^2", u"mg", u"mg",          # leaf traits
             NoUnits, u"m^2/g", NoUnits,     # root traits,
             u"m",              # LEDA
-            u"g/g", u"mg/g" # TRY
+            u"g/g", u"mg/g", # TRY
         ]
 
-        traits = Array{Quantity{Float64}}(
-            undef,
+        traits = Array{Quantity{Float64}}(undef,
             n,
-            length(transformations)
-        )
+            length(transformations))
         traitdf_names = [
             "LA_log", "LFM_log", "LDM_log",
             "BA_log", "SRSA_log", "AMC_logit",
             "CH_log",
-            "LDMPM_log", "LNCM_log"
+            "LDMPM_log", "LNCM_log",
         ]
         trait_names = first.(split.(traitdf_names, "_"))
 
-        for (i,t) in enumerate(transformations)
+        for (i, t) in enumerate(transformations)
             trait = t.(log_logit_traits[i, :])
             unit_vector = repeat([units[i]], n)
             traits[:, i] .= trait .* unit_vector
@@ -95,11 +90,10 @@ function relative_traits(; trait_data)
         trait_data[:, i] .= (trait_data[:, i] .- mint) ./ (maxt - mint)
     end
 
-    [trait_data[trait_data[:, i] .< 0, i] .= 0.0  for i in 1:ntraits]
-    [trait_data[trait_data[:, i] .> 1, i] .= 1.0  for i in 1:ntraits]
+    [trait_data[trait_data[:, i] .< 0, i] .= 0.0 for i in 1:ntraits]
+    [trait_data[trait_data[:, i] .> 1, i] .= 1.0 for i in 1:ntraits]
 
     return trait_data
 end
-
 
 end

@@ -12,30 +12,30 @@ include("senescence.jl")
 TBW
 """
 function growth(;
-        nspecies,
-        fun_response,
-        trait_similarity,
-        below_competition_strength,
-        SLA, CH, biomass,
-        PAR,
-        WR,
-        PWP, WHC,
-        nutrients,
-        PET,
-        T, ST,
-        water_red,
-        nutrient_red,
-        max_SRSA_water_reduction,
-        max_SLA_water_reduction,
-        max_AMC_nut_reduction,
-        max_SRSA_nut_reduction)
+    nspecies,
+    fun_response,
+    trait_similarity,
+    below_competition_strength,
+    SLA, CH, biomass,
+    PAR,
+    WR,
+    PWP, WHC,
+    nutrients,
+    PET,
+    T, ST,
+    water_red,
+    nutrient_red,
+    max_SRSA_water_reduction,
+    max_SLA_water_reduction,
+    max_AMC_nut_reduction,
+    max_SRSA_nut_reduction)
 
     #### potential growth
     pot_growth, lai_tot = potential_growth(; nspecies, SLA, biomass, PAR)
 
     ### influence of the height of plants
     cwm_CH = community_weighted_mean_height(; biomass, CH)
-    CHinfluence = (CH .- (CH .- cwm_CH) ./ 1.5 ) ./ cwm_CH
+    CHinfluence = (CH .- (CH .- cwm_CH) ./ 1.5) ./ cwm_CH
 
     #### below ground competition --> trait similarity and abundance
     below = below_ground_competition(;
@@ -62,7 +62,6 @@ function growth(;
     #### final growth
     return pot_growth .* reduction, lai_tot
 end
-
 
 @doc raw"""
     similarity_matrix(; scaled_traits)
@@ -98,7 +97,7 @@ function similarity_matrix(; scaled_traits)
 
         for n in 1:ntraits
             species_trait = scaled_traits[i, n]
-            diff .+= abs.(species_trait .- scaled_traits[: , n])
+            diff .+= abs.(species_trait .- scaled_traits[:, n])
         end
 
         similarity_mat[i, :] .= 1 .- (diff ./ ntraits)
@@ -106,8 +105,6 @@ function similarity_matrix(; scaled_traits)
 
     return similarity_mat
 end
-
-
 
 @doc raw"""
     below_ground_competition(;
@@ -139,13 +136,12 @@ and the root surface area devided by the above ground biomass (`SRSA_above`).
 function below_ground_competition(;
     biomass, trait_similarity, nspecies,
     below_competition_strength)
-
     reduction_coefficient = Array{Float64}(undef, nspecies)
     biomass = ustrip.(biomass)
 
     for i in 1:nspecies
         x = sum(trait_similarity[i, :] .* biomass)
-        reduction_coefficient[i] = exp(-below_competition_strength/1000 * x)
+        reduction_coefficient[i] = exp(-below_competition_strength / 1000 * x)
     end
 
     return reduction_coefficient
@@ -184,7 +180,7 @@ function potential_growth(; SLA, nspecies, biomass, PAR)
         return fill(0.0, nspecies)u"kg / ha / d", LAItot
     end
 
-    RUE_max = 3//1000 * u"kg / MJ" # Maximum radiation use efficiency 3 g DM MJ-1
+    RUE_max = 3 // 1000 * u"kg / MJ" # Maximum radiation use efficiency 3 g DM MJ-1
     α = 0.6   # Extinction coefficient, unitless
 
     total_growth = PAR * RUE_max * (1 - exp(-α * LAItot))
@@ -192,7 +188,6 @@ function potential_growth(; SLA, nspecies, biomass, PAR)
 
     return species_growth, LAItot
 end
-
 
 """
     community_weighted_mean_height(; biomass, CH)
@@ -202,7 +197,6 @@ TBW
 function community_weighted_mean_height(; biomass, CH)
     return sum(biomass .* CH) / sum(biomass)
 end
-
 
 @doc raw"""
     calculate_LAI(; SLA, biomass)

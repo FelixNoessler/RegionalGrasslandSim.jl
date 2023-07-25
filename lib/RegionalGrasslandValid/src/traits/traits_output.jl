@@ -1,5 +1,5 @@
 function calc_CWM(; biomass, trait_data)
-    tend, npatches, nspecies  = size(biomass)
+    tend, npatches, nspecies = size(biomass)
     trait_data = ustrip.(trait_data)
     biomass = ustrip.(biomass)
     cwm = Array{Float64}(undef, tend)
@@ -16,9 +16,8 @@ function calc_CWM(; biomass, trait_data)
     return cwm
 end
 
-
 function calc_CWV(; biomass, trait_data)
-    tend, npatches, nspecies  = size(biomass)
+    tend, npatches, nspecies = size(biomass)
     trait_data = ustrip.(trait_data)
     biomass = ustrip.(biomass)
 

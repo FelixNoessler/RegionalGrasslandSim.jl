@@ -37,14 +37,13 @@ function mowing(;
     # --------- if meadow is too often mown, less biomass is removed
     ## the 'mowing_mid_days' is the day where the plants are grown
     ## back to their normal size/2
-    mow_factor = 1/(1+exp(-0.05*(days_since_last_mowing-mowing_mid_days)))
+    mow_factor = 1 / (1 + exp(-0.05 * (days_since_last_mowing - mowing_mid_days)))
 
     # --------- biomass that is removed by mowing
     removed_biomass = mow_factor .* λ .* biomass .* u"d^-1"
 
     return removed_biomass
 end
-
 
 @doc raw"""
     grazing(; LD, biomass, ρ, nspecies, grazing_half_factor)
@@ -83,12 +82,11 @@ function grazing(; LD, biomass, ρ, nspecies, grazing_half_factor)
     h = 1 / μₘₐₓ
     a = 1 / (grazing_half_factor^k_exp * h)
 
-    graz = a * sum(biomass)^k_exp  / (1u"kg / ha" ^ k_exp + a*h*sum(biomass)^k_exp)
+    graz = a * sum(biomass)^k_exp / (1u"kg / ha"^k_exp + a * h * sum(biomass)^k_exp)
     share = (ρ .* biomass) ./ sum(ρ .* biomass)
 
     return graz .* share
 end
-
 
 @doc raw"""
     trampling(; LD, biomass, LA, CH, trampling_factor)
@@ -130,7 +128,7 @@ function trampling(; LD, biomass, CH, nspecies, trampling_factor)
     ## values shouldn't be lower than 50,
     ## otherwise (larger) plants are too heavily influenced
     ω = @. trampling_factor / ustrip(CH)^0.25 * u"1/ha"
-    trampled_biomass = @. biomass * 0.5 * (1 - cos(π*LD/ω))
+    trampled_biomass = @. biomass * 0.5 * (1 - cos(π * LD / ω))
 
     if any(LD .> ω)
         @warn """

@@ -15,34 +15,37 @@ function load_data(datapath)
     sch_samples = load("$datapath/scenarios/prec.jld2", "SCH")
 
     global posterior = (;
-        HAI=hai_samples,
-        ALB=alb_samples,
-        SCH=sch_samples,
-    )
+        HAI = hai_samples,
+        ALB = alb_samples,
+        SCH = sch_samples)
 
     return nothing
 end
 
-function transform_t(; t, original_t=t)
+function transform_t(; t, original_t = t)
     t_min, t_max = extrema(original_t)
     return (t .- t_min) ./ (t_max - t_min)
 end
 
 ##############################
-struct ZeroLogNormal{T<:Real} <: ContinuousUnivariateDistribution
+struct ZeroLogNormal{T <: Real} <: ContinuousUnivariateDistribution
     ϕ₀::T
     μ::T
     σ::T
     ZeroLogNormal{T}(ϕ₀, μ, σ) where {T} = new{T}(ϕ₀, μ, σ)
 end
 
-function ZeroLogNormal(ϕ₀::T, μ::T, σ::T; check_args::Bool=true) where {T <: Real}
+function ZeroLogNormal(ϕ₀::T, μ::T, σ::T; check_args::Bool = true) where {T <: Real}
     Distributions.@check_args ZeroLogNormal (ϕ₀, one(ϕ₀) ≥ ϕ₀ ≥ zero(ϕ₀)) (σ, σ ≥ zero(σ))
     return ZeroLogNormal{T}(ϕ₀, μ, σ)
 end
 
-ZeroLogNormal(ϕ₀::Real, μ::Real, σ::Real; check_args::Bool=true) = ZeroLogNormal(promote(ϕ₀, μ, σ)...; check_args=check_args)
-ZeroLogNormal(ϕ₀::Integer, μ::Integer, σ::Integer; check_args::Bool=true) = ZeroLogNormal(float(ϕ₀), float(μ), float(σ); check_args=check_args)
+function ZeroLogNormal(ϕ₀::Real, μ::Real, σ::Real; check_args::Bool = true)
+    ZeroLogNormal(promote(ϕ₀, μ, σ)...; check_args = check_args)
+end
+function ZeroLogNormal(ϕ₀::Integer, μ::Integer, σ::Integer; check_args::Bool = true)
+    ZeroLogNormal(float(ϕ₀), float(μ), float(σ); check_args = check_args)
+end
 
 Distributions.@distr_support ZeroLogNormal 0.0 Inf
 
@@ -56,17 +59,19 @@ function Base.rand(rng::AbstractRNG, d::ZeroLogNormal)
     if rand(rng) < ϕ₀
         return 0.0
     else
-        return rand(rng, truncated(LogNormal(μ, σ); upper=190))
+        return rand(rng, truncated(LogNormal(μ, σ); upper = 190))
     end
 end
 
 # 2 sampler
-Distributions.sampler(rng::AbstractRNG, d::ZeroLogNormal) = Base.rand(rng::AbstractRNG, d::ZeroLogNormal)
+function Distributions.sampler(rng::AbstractRNG, d::ZeroLogNormal)
+    Base.rand(rng::AbstractRNG, d::ZeroLogNormal)
+end
 
 # 3 - logpdf
 function Distributions.logpdf(d::ZeroLogNormal, x::Real)
     ϕ₀, μ, σ = params(d)
-    l = truncated(LogNormal(μ, σ); upper=190)
+    l = truncated(LogNormal(μ, σ); upper = 190)
 
     if x == 0
         return log(ϕ₀)
@@ -77,12 +82,11 @@ function Distributions.logpdf(d::ZeroLogNormal, x::Real)
     end
 end
 
-function create_cyclic_effect(d; freqs = [1,2,10], period=365)
+function create_cyclic_effect(d; freqs = [1, 2, 10], period = 365)
     return [sinpi.(2 .* freqs' .* d ./ period) cospi.(2 .* freqs' .* d ./ period)]
 end
 
-
-invlogit(x::Real) = exp(x)/(1+exp(x))
+invlogit(x::Real) = exp(x) / (1 + exp(x))
 
 @model function precip_model(c)
     ### priors
@@ -90,7 +94,7 @@ invlogit(x::Real) = exp(x)/(1+exp(x))
     βμ ~ MvNormal(zeros(size(c, 2)), 0.1 * I)
     αϕ₀ ~ Normal(0.0, 0.5) # on logit scale
     βϕ₀ ~ MvNormal(zeros(size(c, 2)), 0.1 * I) # on logit scale
-    σ ~ truncated(Normal(0, 3); lower=0)
+    σ ~ truncated(Normal(0, 3); lower = 0)
 
     ### cyclic effects
     μ = αμ .+ c * βμ
@@ -99,19 +103,17 @@ invlogit(x::Real) = exp(x)/(1+exp(x))
     ### likelihood
     y ~ arraydist(ZeroLogNormal.(ϕ₀, μ, σ))
 
-    return (ϕ₀=ϕ₀, μ=μ)  # extract with generated_quantities
+    return (ϕ₀ = ϕ₀, μ = μ)  # extract with generated_quantities
 end
 
 function predict_precipitation(;
     nyears,
     explo)
-
     t_pred = 1:365
-    cyclic_pred = create_cyclic_effect(t_pred; freqs = [1,2,3])
-    m_pred = precip_model(cyclic_pred);
+    cyclic_pred = create_cyclic_effect(t_pred; freqs = [1, 2, 3])
+    m_pred = precip_model(cyclic_pred)
 
-    pred_matrix = Array(Turing.predict(
-        m_pred,
+    pred_matrix = Array(Turing.predict(m_pred,
         sample(posterior[Symbol(explo)], nyears)))
     pred_vector = reshape(pred_matrix', :)
 

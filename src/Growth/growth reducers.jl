@@ -68,7 +68,6 @@ function water_reduction(;
     PET,
     PWP,
     WHC)
-
     if !water_red
         return 1.0
     end
@@ -79,11 +78,11 @@ function water_reduction(;
     ## option 2: water reduction by water availability and
     ##           potential evapotranspiration
     W = WR > WHC ? 1.0 : WR > PWP ? (WR - PWP) / (WHC - PWP) : 0.0
-    PETₘₐₓ= 8u"mm / d"
-    β₁=6.467
-    β₂=7.623e-8
-    exp_fun = -(β₂*PET/PETₘₐₓ + (1-PET/PETₘₐₓ)*β₁)
-    x = (1 - exp(exp_fun*W) ) / (1-exp(exp_fun))
+    PETₘₐₓ = 8u"mm / d"
+    β₁ = 6.467
+    β₂ = 7.623e-8
+    exp_fun = -(β₂ * PET / PETₘₐₓ + (1 - PET / PETₘₐₓ) * β₁)
+    x = (1 - exp(exp_fun * W)) / (1 - exp(exp_fun))
 
     ### ------------ species specific functional response
     sla_y = sla_water_reduction(; fun_response, x, max_SLA_water_reduction)
@@ -101,11 +100,11 @@ function sla_water_reduction(;
     fun_response,
     x,
     max_SLA_water_reduction)
-
     k_SLA = 5
-    A_SLA = 1-max_SLA_water_reduction
-    return @. A_SLA + (1 - A_SLA) /
-            (1 + exp(-k_SLA * (x - fun_response.sla_water_midpoint)))
+    A_SLA = 1 - max_SLA_water_reduction
+    return @. A_SLA +
+              (1 - A_SLA) /
+              (1 + exp(-k_SLA * (x - fun_response.sla_water_midpoint)))
 end
 
 """
@@ -115,14 +114,14 @@ TBW
 """
 function srsa_water_reduction(; fun_response, x, max_SRSA_water_reduction)
     k_SRSA = 7
-    A_SRSA = 1-max_SRSA_water_reduction
+    A_SRSA = 1 - max_SRSA_water_reduction
     K_SRSA_prep = fun_response.srsa_right_bound
     K_SRSA = @. K_SRSA_prep + (1 - K_SRSA_prep) * A_SRSA
 
-    return @. A_SRSA +  (K_SRSA  - A_SRSA) /
-            (1 + exp(-k_SRSA * (x - fun_response.srsa_midpoint)))
+    return @. A_SRSA +
+              (K_SRSA - A_SRSA) /
+              (1 + exp(-k_SRSA * (x - fun_response.srsa_midpoint)))
 end
-
 
 """
     nutrient_reduction(;
@@ -140,18 +139,16 @@ function nutrient_reduction(;
     nutrients,
     max_AMC_nut_reduction,
     max_SRSA_nut_reduction)
-
     if !nutrient_red
         return 1.0
     end
 
     ### ------------ species specific functional response
-    amc_red = amc_nut_reduction(; fun_response, x=nutrients, max_AMC_nut_reduction)
-    srsa_red = srsa_nut_reduction(; fun_response, x=nutrients, max_SRSA_nut_reduction)
+    amc_red = amc_nut_reduction(; fun_response, x = nutrients, max_AMC_nut_reduction)
+    srsa_red = srsa_nut_reduction(; fun_response, x = nutrients, max_SRSA_nut_reduction)
 
     return max.(amc_red, srsa_red)
 end
-
 
 """
     amc_nut_reduction(; fun_response, x, max_AMC_nut_reduction)
@@ -160,12 +157,13 @@ TBW
 """
 function amc_nut_reduction(; fun_response, x, max_AMC_nut_reduction)
     k_AMC = 7
-    A_AMC = 1-max_AMC_nut_reduction
+    A_AMC = 1 - max_AMC_nut_reduction
     K_AMC_prep = fun_response.myco_nutr_right_bound
     K_AMC = @. K_AMC_prep + (1 - K_AMC_prep) * A_AMC
 
-    return @. A_AMC + (K_AMC - A_AMC) /
-            (1 + exp(-k_AMC * (x - fun_response.myco_nutr_midpoint)))
+    return @. A_AMC +
+              (K_AMC - A_AMC) /
+              (1 + exp(-k_AMC * (x - fun_response.myco_nutr_midpoint)))
 end
 
 """
@@ -175,15 +173,14 @@ TBW
 """
 function srsa_nut_reduction(; fun_response, x, max_SRSA_nut_reduction)
     k_SRSA = 7
-    A_SRSA = 1-max_SRSA_nut_reduction
+    A_SRSA = 1 - max_SRSA_nut_reduction
     K_SRSA_prep = fun_response.srsa_right_bound
     K_SRSA = @. K_SRSA_prep + (1 - K_SRSA_prep) * A_SRSA
 
-    return @. A_SRSA + (K_SRSA - A_SRSA) /
-            (1 + exp(-k_SRSA * (x - fun_response.srsa_midpoint)))
+    return @. A_SRSA +
+              (K_SRSA - A_SRSA) /
+              (1 + exp(-k_SRSA * (x - fun_response.srsa_midpoint)))
 end
-
-
 
 """
     seasonal_reduction()
@@ -193,8 +190,7 @@ TBW
 ![Image of the seasonal effect function](../../img/seasonal_reducer.svg)
 """
 function seasonal_reduction(;
-        ST # accumulated degree days
-    )
+    ST)
     SEAₘᵢₙ = 0.67 # unitless
     SEAₘₐₓ = 1.33 # unitless
 
@@ -203,12 +199,12 @@ function seasonal_reduction(;
 
     if ST < 200
         return SEAₘᵢₙ
-    elseif ST < ST₁-200
-        return SEAₘᵢₙ + (SEAₘₐₓ-SEAₘᵢₙ)*(ST-200)/(ST₁-400)
-    elseif ST < ST₁-100
+    elseif ST < ST₁ - 200
+        return SEAₘᵢₙ + (SEAₘₐₓ - SEAₘᵢₙ) * (ST - 200) / (ST₁ - 400)
+    elseif ST < ST₁ - 100
         return SEAₘₐₓ
     elseif ST < ST₂
-        return SEAₘᵢₙ + (SEAₘᵢₙ-SEAₘₐₓ)*(ST-ST₂)/(ST₂-(ST₁-100))
+        return SEAₘᵢₙ + (SEAₘᵢₙ - SEAₘₐₓ) * (ST - ST₂) / (ST₂ - (ST₁ - 100))
     else
         return SEAₘᵢₙ
     end

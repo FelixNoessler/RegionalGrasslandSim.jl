@@ -28,7 +28,6 @@ function change_water_reserve(;
     return water_change, AEv
 end
 
-
 function actual_evapotranspiration(; WR, ATr, AEv)
     return min(WR * u"d^-1", ATr + AEv)
 end
@@ -57,7 +56,7 @@ function transpiration(;
     # plant available water:
     W = max(0.0, (WR - PWP) / (WHC - PWP))
 
-    transpi = W  * PET * LAI_tot/3
+    transpi = W * PET * LAI_tot / 3
 
     return transpi
 end
@@ -69,9 +68,8 @@ Aev(t) = WR(t) / WHC * PET(t)*[1 - min(1; LAI_tot(t)/3) ]
 """
 function evaporation(; WR, WHC, PET, LAI_tot)
     W = WR / WHC
-    return W * PET * (1 - min(1, LAI_tot/3))
+    return W * PET * (1 - min(1, LAI_tot / 3))
 end
-
 
 """
     water_drainage(; WR, P, WHC, AET)
@@ -79,10 +77,8 @@ end
 Δ(𝑡) = max(𝑊𝑅(𝑡) + 𝑃 (𝑡) − 𝐴𝐸𝑇 (𝑡) − 𝑊𝐻𝐶 ; 0)
 """
 function water_drainage(; WR, precipitation, WHC, AET)
-    return max(
-        WR * u"d^-1" + precipitation - WHC * u"d^-1" - AET,
-        0.0u"mm / d"
-    )
+    return max(WR * u"d^-1" + precipitation - WHC * u"d^-1" - AET,
+        0.0u"mm / d")
 end
 
 end # of module

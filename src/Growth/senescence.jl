@@ -28,7 +28,6 @@ function senescence(; ST, biomass, μ)
     return μ .* SEN .* biomass
 end
 
-
 @doc raw"""
     seasonal_component_senescence(; ST)
 
@@ -54,13 +53,12 @@ SEN_{max}  & \text{if}\;\; ST > Ψ_2
 ![Seasonal component death rate](../../img/seasonal_factor_senescence.svg)
 """
 function seasonal_component_senescence(;
-        ST,
-        Ψ₁ = 775, #u"°C * d"
-        Ψ₂ = 3000, #u"°C * d"
-        SENₘᵢₙ = 1,
-        SENₘₐₓ = 3)
-
-    lin_increase(ST) = SENₘᵢₙ + (SENₘₐₓ-SENₘᵢₙ) * (ST-Ψ₁) / (Ψ₂-Ψ₁)
+    ST,
+    Ψ₁ = 775, #u"°C * d"
+    Ψ₂ = 3000, #u"°C * d"
+    SENₘᵢₙ = 1,
+    SENₘₐₓ = 3)
+    lin_increase(ST) = SENₘᵢₙ + (SENₘₐₓ - SENₘᵢₙ) * (ST - Ψ₁) / (Ψ₂ - Ψ₁)
     SEN = ST < Ψ₁ ? SENₘᵢₙ : ST < Ψ₂ ? lin_increase(ST) : SENₘₐₓ
 
     return SEN
