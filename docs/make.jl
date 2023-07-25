@@ -11,8 +11,6 @@ using Documenter
 import RegionalGrasslandSim
 import RegionalGrasslandSim as sim
 import RegionalGrasslandVis as vis
-using CairoMakie
-using Unitful
 
 ####### Create Bilbiography
 using DocumenterCitations
