@@ -5,7 +5,7 @@ CurrentModule = RegionalGrasslandSim.Growth
 ```
 
 the net growth of the plants is modelled by...
-- the [potential growth](@ref pot_growth) that is multiplied by some [growth reducer functions](@ref reducer_functions), both processes are implemented in the main function [`growth`](@ref)
+- the [potential growth](@ref pot_growth) that is multiplied by some [growth reducer functions](@ref reducer_functions) and a [belowground competition function](@ref below_competition), these processes are included in the main function [`growth`](@ref)
 - [Leaf senescence](@ref)
 - [Agricultural defoliation](@ref)
 
@@ -41,7 +41,7 @@ seasonal_reduction
 ```
 --
 
-## Below-ground competition
+## [Below-ground competition](@id below_competition)
 
 ```@docs
 below_ground_competition

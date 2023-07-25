@@ -19,8 +19,6 @@ using DocumenterCitations
 bib = CitationBibliography("docs/src/lit.bib")
 
 ####### create images for the document
-vis.set_global_theme()
-
 #### functional response
 vis.potential_growth(sim; path="docs/src/img/sla_potential_growth.svg")
 vis.srsa_water_response(sim;
@@ -75,10 +73,10 @@ makedocs(
     pages = Any[
         "Home" => "index.md",
         "Modelling API"=> Any[
-            "Difference equation" => "Modelling API/Difference equation/index.md",
-            "Growth" => "Modelling API/Growth/index.md",
-            "Water dynamics" => "Modelling API/Water dynamics/index.md",
-            "Functional response" => "Modelling API/Functional response/index.md",
+            "Difference equation" => "Modelling_API/Difference_equation/index.md",
+            "Growth" => "Modelling_API/Growth/index.md",
+            "Water dynamics" => "Modelling_API/Water_dynamics/index.md",
+            "Functional response" => "Modelling_API/Functional_response/index.md",
         ],
         "References" => "References.md"
     ]
