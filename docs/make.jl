@@ -1,7 +1,7 @@
 ####### build the documentation locally
 # cd RegionalGrasslandSim
 # julia --project=docs/ --startup-file=no
-# using Revise; import Pkg; Pkg.instantiate(); Pkg.develop(path="RegionalGrasslandVis/"); Pkg.develop(path="RegionalGrasslandSim/"); include("docs/make.jl")
+# using Revise; import Pkg; Pkg.instantiate(); Pkg.develop(path="lib/RegionalGrasslandVis/"); Pkg.develop(path="."); include("docs/make.jl")
 ## to redo the documentation:
 # include("docs/make.jl")
 ## to clean everything for commits/push:
@@ -63,7 +63,7 @@ vis.trampling(sim; path="docs/src/img/trampling.svg")
 # for prettyurls you need locally a live server
 makedocs(
     bib;
-    sitename = "RegionalGrasslandSim",
+    sitename = "RegionalGrasslandSim.jl",
     format = Documenter.HTML(
         prettyurls = true,
         mathengine=MathJax3()),

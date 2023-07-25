@@ -1,3 +1,6 @@
 RegionalGrasslandData/
 tmp/
 Grassland_data_analysis/
+/Manifest.toml
+*.py
+
