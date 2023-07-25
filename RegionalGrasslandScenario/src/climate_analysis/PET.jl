@@ -1,7 +1,6 @@
 module PET
 
 using Turing
-using LazyArrays
 using LinearAlgebra
 using JLD2
 using Unitful
@@ -32,7 +31,7 @@ end
     σ = exp.(ασ .+ c * βσ)
 
     ### likelihood
-    y ~ arraydist(LazyArray(@~ truncated.(Normal.(μ, σ); lower=0)))
+    y ~ arraydist(truncated.(Normal.(μ, σ); lower=0))
 
     return (; μ=μ, σ=σ)  # extract with generated_quantities
 end
