@@ -59,7 +59,6 @@ function band_patch(ax;
 
         # data_t_prep, data_biomass = add_nans(data.biomass_t, data.biomass)
         # data_t = 2012 .+ data_t_prep ./ 365
-
         # scatterlines!(ax, data_t, data_biomass;
         #     color = :grey)
     end

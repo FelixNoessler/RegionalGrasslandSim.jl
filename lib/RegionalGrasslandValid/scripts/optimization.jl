@@ -48,6 +48,7 @@ function run_optimization(;
     #    σ_bio  σ_ev σ_mo m_c s_i s_r below tram graz mow SRSA SLA  AMC  SRSA_n
     lb = [  0,   0,   0, 0.1, 0,   0,  0,  50, 250, 5, 0.0, 0.0, 0.0, 0.0]
     ub = [5e3, 100, 100, 1.2, 5, 100, 15, 200, 1000, 25, 1.0, 1.0, 1.0, 1.0]
+
     bounds = boxconstraints(; lb, ub)
 
     options = Options(;
@@ -73,6 +74,7 @@ function run_optimization(;
     ## DE or ECA
     algorithm = ECA(; options = options)
     result = optimize(ll_batch, bounds, algorithm, logger=live_plot)
+
     @show minimizer(result)
 
     return result
@@ -83,10 +85,10 @@ optim_result = run_optimization(;
     batch_size = 9,
     iterations = 30)
 
-
 let
     f_calls, best_f_value = convergence(optim_result)
     fig, _ = lines(f_calls, best_f_value, label = "ECA")
+
 
     # f_calls, best_f_value = convergence(optim_result1)
     # lines!(f_calls, best_f_value, label="DE")

@@ -10,7 +10,6 @@ function loglikelihood_model(sim::Module; inf_p, plotID)
     pdist_sigma_biomass = truncated(Normal(0, 1000); lower=0)
     p_sigma_biomass = logpdf(pdist_sigma_biomass, inf_p.sigma_biomass)
 
-
     ########################## Calculate likelihood
     ################## satellite biomass
     ### select the days where we have biomass estimated by the satellite images
