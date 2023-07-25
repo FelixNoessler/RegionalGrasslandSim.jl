@@ -61,7 +61,7 @@ function predict_par(; explo, nyears)
         original_t=posterior[Symbol("$(explo)_t")],
         posterior_sample)
 
-    return vec(Y_pred) .* u"MJ / d / m^2"
+    return vec(Y_pred) .* 10000 .* u"MJ / (d * ha) "
 end
 
 end # of module

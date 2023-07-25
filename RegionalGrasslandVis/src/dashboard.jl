@@ -1,4 +1,5 @@
-function dashboard(sim, valid, scen;)
+function dashboard(sim, valid, scen; inf_p_start)
+
     fig = Figure(; resolution=(1700, 900))
 
     top_menu = fig[1,1:2] = GridLayout()
@@ -13,12 +14,15 @@ function dashboard(sim, valid, scen;)
     mowing_layout = top_menu[1,3] = GridLayout()
     center_layout = top_menu[1,4] = GridLayout()
     right_layout = top_menu[1,5] = GridLayout()
+    rightupper_layout = right_layout[1,1] = GridLayout()
+    rightlower_layout = right_layout[2,1] = GridLayout()
+
     [colgap!(top_menu, i, s)  for (i,s) in enumerate([80,50,50,80])]
 
     left_box = top_menu[1, 2:4]
     Box(left_box[1,1], alignmode=Outside(-8);
         color=(:black, 0.0))
-    Box(right_layout[1:2,1:2], alignmode=Outside(-8);
+    Box(rightupper_layout[1:2,1:2], alignmode=Outside(-8);
         color=(:black, 0.0))
 
     ############# Exploratory
@@ -110,13 +114,13 @@ function dashboard(sim, valid, scen;)
     ############# Nutrients
     slidergrid_nut = SliderGrid(
         center_layout[4,1:4],
-        (label = "Nutrient\nindex", range = 0.0:0.01:1.0, format = "{:.1f}", startvalue = 0.8))
+        (label = "Nutrient\nindex", range = 0.0:0.01:1.0, format = "{:.2f}", startvalue = 0.8))
     slider_nut = slidergrid_nut.sliders[1]
 
     ############# water holding capacity and permanent wilting point
     Label(center_layout[5,1], "PWP, WHC";
         halign=:left)
-    slider_pwp_whc = IntervalSlider(center_layout[5, 2:3], range = LinRange(50, 250, 500),
+    slider_pwp_whc = IntervalSlider(center_layout[5, 2:3], range = LinRange(30, 350, 500),
         startvalues = (80, 150))
     whc_pwp_labeltext = lift(slider_pwp_whc.interval) do pwp_whc
         string(Int.(round.(pwp_whc)))
@@ -126,26 +130,27 @@ function dashboard(sim, valid, scen;)
     [rowgap!(center_layout, i, dist) for (i, dist) in enumerate([5,4,10,10])]
 
     ############# Plot ID
-    Label(right_layout[1,1], "OR: Plot ID";
+    Label(rightupper_layout[1,1], "OR: Plot ID";
         tellwidth=true, halign=:left)
     toggle_plotID = Toggle(
-        right_layout[1, 2],
+        rightupper_layout[1, 2],
         active = false,
         tellwidth=false,
         halign=:left
     )
-    menu_plotID = Menu(right_layout[2,1:2];
+    menu_plotID = Menu(rightupper_layout[2,1:2];
         options=["$(explo)0$i" for i in 1:9 for explo in ["HEG", "SEG", "AEG"]])
+    rowgap!(rightupper_layout, 1, 5)
 
     ############# Abiotic variable
-    Label(right_layout[3,1:2], "Abiotic variable (right lower plot)";
+    Label(rightlower_layout[1,1], "Abiotic variable (right lower plot)";
         tellwidth=false, halign=:left)
-    menu_abiotic = Menu(right_layout[4,1:2], options = zip([
+    menu_abiotic = Menu(rightlower_layout[2,1], options = zip([
             "Precipitation [mm d⁻¹]",
             "Potential evapo-\ntranspiration [mm d⁻¹]",
             "Air temperature [°C]\n",
             "Air temperaturesum [°C]\n",
-            "Photosynthetically active\nradiation [MJ m⁻² d⁻¹]"
+            "Photosynthetically active\nradiation [MJ ha⁻¹ d⁻¹]"
         ], [
             :precipitation,
             :PET,
@@ -156,9 +161,9 @@ function dashboard(sim, valid, scen;)
         )
 
     ############# Coloring -> traits or biomass
-    Label(right_layout[5,1:2], "Color/trait (right upper plot)";
+    Label(rightlower_layout[3,1], "Color/trait (right upper plot)";
         tellwidth=false, halign=:left)
-    menu_color = Menu(right_layout[6,1:2], options = zip([
+    menu_color = Menu(rightlower_layout[4,1], options = zip([
         "Specific leaf area [m² g⁻¹]",
         "Leaf nitrogen per leaf mass [mg g⁻¹]",
         "Height [m]",
@@ -169,7 +174,32 @@ function dashboard(sim, valid, scen;)
         "Biomass"
     ], [:SLA, :LNCM, :CH, :LL, :AMC, :SRSA_above, :biomass])
     )
-    [rowgap!(right_layout, i, dist) for (i, dist) in enumerate([5,20,5,15,5])]
+    [rowgap!(rightlower_layout, i, dist) for (i, dist) in enumerate([5,15,5])]
+
+    ############# Checkbox bands and mowing/grazing visible?
+    righttoggles_layout = rightlower_layout[1:4, 2] = GridLayout()
+
+    Label(righttoggles_layout[1,1], "bands visible?";
+        halign=:left)
+    toggle_bands = Toggle(righttoggles_layout[1, 2], active = false)
+    Label(righttoggles_layout[2,1], "grazing/mowing?";
+        halign=:left)
+    toggle_grazmow = Toggle(righttoggles_layout[2, 2], active = false)
+    Label(righttoggles_layout[3,1], "valid data?";
+        halign=:left)
+    toggle_validdata = Toggle(righttoggles_layout[3, 2], active = false)
+
+    ############# Trait Colorbar
+    cb = Colorbar(param_layout[1,1];
+        colorrange=(-0.5, 0.5),
+        valign=:center,
+        vertical = false,
+        flipaxis = true,
+        tellwidth=false,
+        tellheight=true,
+        height=20,
+        width=300)
+    rowsize!(param_layout,1, Fixed(70))
 
     ############# Parameter values
     parameter_names = [
@@ -188,20 +218,21 @@ function dashboard(sim, valid, scen;)
         "max_AMC_nut_reduction",
         "max_SRSA_nut_reduction"
     ]
-    p_lower = [0.1,    0.1, 0.1, 0.1, 1e-6,  0,  0.0,   50.0,  500,  10, 0.0, 0.0, 0.0, 0.0]
-    p_upper = [100000, 100, 100, 1.2, 1e-1,  10, 0.01,  200.0, 5000,  150, 1.0, 1.0, 1.0, 1.0]
-    p_start = [
-        729818.181240058, 38.84303294678368, 81.597956889167, 1.040678730679339, 0.45363012509969164, 34.36001350878733, 0.001682218304114495, 142.23173403268342, 535.1166461291608, 22.76107958993106, 0.2841526214673337, 0.17717712862685397, 0.5894201401442405, 0.802207622261675]
+    p_lower = [0.1,    0.1, 0.1, 0.1, 1e-6,  0,  0.0, 50.0,  50,    10, 0.0, 0.0, 0.0, 0.0]
+    p_upper = [100000, 100, 100, 1.2, 1e-1,  10, 5,   200.0, 5000,  150, 1.0, 1.0, 1.0, 1.0]
     param_slider_prep = [(
         label=parameter_names[i],
         range=p_lower[i]:0.0001:p_upper[i],
-        format = "{:.4f}",
-        startvalue=p_start[i] ) for i in 5:length(parameter_names)
+        format = "{:.3f}",
+        startvalue=inf_p_start[i] ) for i in 5:length(parameter_names)
     ]
     sliders_param = SliderGrid(
-        param_layout[1, 1],
-        tellheight=false,
+        param_layout[2, 1],
+        # height=900,
+        tellheight=true,
         param_slider_prep...;)
+    rowgap!(param_layout, 1, 0)
+
 
     #############
     axes = [
@@ -213,26 +244,27 @@ function dashboard(sim, valid, scen;)
             for (i,u) in zip([1,1,2,2,2], [1,2,1,2,3])
     ]
 
-    cb = Colorbar(plots_layout[1,3];
-        colorrange=(-0.5, 0.5),
-        valign=:bottom,
-        alignmode = Inside(),
-        vertical = false,
-        flipaxis = true,
-        tellwidth=false,
-        tellheight=false,
-        height=20,
-        width=300)
-
     ###########
     sol = nothing
     plotID = nothing
 
     still_running = false
 
+    show_bands = toggle_bands.active.val
+    show_grazmow = toggle_grazmow.active.val
+    show_validdata = toggle_validdata.active.val
+
+    function update_all()
+        if !isnothing(sol)
+            update_plots(;
+                sol,
+                menu_color, menu_abiotic,
+                axes, cb, plotID, valid,
+                show_bands, show_grazmow, show_validdata)
+        end
+    end
 
     on(run_button.clicks) do n
-
         if !still_running
             still_running = true
 
@@ -242,6 +274,10 @@ function dashboard(sim, valid, scen;)
 
             use_simulated_data = !toggle_plotID.active.val
             input_obj = nothing
+
+            show_bands = toggle_bands.active.val
+            show_grazmow = toggle_grazmow.active.val
+            show_validdata = toggle_validdata.active.val
 
             if use_simulated_data
                 plotID = nothing
@@ -301,24 +337,40 @@ function dashboard(sim, valid, scen;)
                     nyears=10,
                     inf_p
                 )
+
+                set_close_to!(slider_nut, input_obj.site.nutrient_index)
+                set_close_to!(slider_pwp_whc,
+                    ustrip(input_obj.site.PWP), ustrip(input_obj.site.WHC))
             end
 
             sol = sim.solve_prob(; input_obj)
-
-            update_plots(; sol, menu_color, menu_abiotic, axes, cb, plotID, valid)
+            update_all()
             still_running = false
         end
     end
 
     on(menu_color.selection) do n
-        if !isnothing(sol)
-            update_plots(; sol, menu_color, menu_abiotic, axes, cb, plotID, valid)
-        end
+        update_all()
     end
 
     on(menu_abiotic.selection) do n
-        if !isnothing(sol)
-            update_plots(; sol, menu_color, menu_abiotic, axes, cb, plotID, valid)
+        update_all()
+    end
+
+    on(toggle_grazmow.active) do n
+        show_grazmow = toggle_grazmow.active.val
+        update_all()
+    end
+
+    on(toggle_bands.active) do n
+        show_bands = toggle_bands.active.val
+        update_all()
+    end
+
+    on(toggle_validdata.active) do n
+        show_validdata = toggle_validdata.active.val
+        if ! isnothing(plotID)
+            update_all()
         end
     end
 
@@ -328,7 +380,11 @@ function dashboard(sim, valid, scen;)
 end
 
 
-function update_plots(; sol, menu_color, menu_abiotic, axes, cb, plotID, valid)
+function update_plots(;
+        sol,
+        menu_color, menu_abiotic,
+        axes, cb, plotID, valid,
+        show_bands, show_grazmow, show_validdata)
     trait = menu_color.selection.val
     name_index = getindex.([menu_color.options.val...], 2) .== trait
     trait_name = first.([menu_color.options.val...])[name_index][1]
@@ -349,25 +405,19 @@ function update_plots(; sol, menu_color, menu_abiotic, axes, cb, plotID, valid)
 
     ########### Biomass
     empty!(axes[1])
-    band_patch(axes[1]; patch=1, sol, color, colormap, colorrange)
-
-    if ! isnothing(plotID)
-        data = valid.get_validation_data(; plotID)
-        inityears = 5
-        mdata_t = (inityears * 365 .+ data.measured_biomass_t) ./ 365
-        f = mdata_t .<= 10
-        mdata = data.measured_biomass ./ 1000
-        mdata1 = data.measured_biomass1 ./ 1000
-
-        scatter!(axes[1], mdata_t[f], mdata[f], marker=:hexagon, color=:black, markersize=15)
-        scatter!(axes[1], mdata_t[f], mdata1[f], marker=:hexagon, color=:black, markersize=15)
-
-    end
+    band_patch(axes[1];
+        patch=1,
+        sol,
+        color,
+        colormap,
+        colorrange,
+        plotID,
+        valid,
+        show_bands, show_grazmow, show_validdata)
 
     ########### Growth rates
     empty!(axes[4])
-    growth_rates(axes[4]; patch=1, sol, color, colormap, colorrange)
-
+    growth_rates(axes[4]; patch=1, sol, color, colormap, colorrange, plotID)
 
     ########### Main biomass vs traits
     empty!(axes[2])
@@ -403,7 +453,7 @@ function update_plots(; sol, menu_color, menu_abiotic, axes, cb, plotID, valid)
     abiotic_color = abiotic_colors[name_index][1]
 
     empty!(axes[5])
-    scatterlines!(axes[5], sol.t[2:end] ./ 365, ustrip.(sol.p.env_data[abiotic]);
+    scatterlines!(axes[5], sol.t ./ 365, ustrip.(sol.p.env_data[abiotic]);
         color=abiotic_color,
         my_set...)
     axes[5].ylabel=abiotic_name

@@ -64,6 +64,78 @@ function growth(;
 end
 
 
+@doc raw"""
+    similarity_matrix(; scaled_traits)
+
+Computes the trait similarity of all plant species.
+
+The trait similarity between plant species $i$ and
+plant species $u$ for $T$ traits is calculated as follows:
+```math
+\text{trait_similarity}_{i,u} =
+    1-\frac{\sum_{t=1}^{t=T}
+        |\text{scaled_trait}_{t,i} - \text{scaled_trait}_{t,u}|}{T}
+```
+
+To give each functional trait an equal influence,
+the trait values have been scaled by the 5 % ($Q_{0.05, t}$)
+and 95 % quantile ($Q_{0.95, t}$) of trait values of 100 plant species:
+```math
+\text{scaled_trait}_{t,i} =
+    \frac{\text{trait}_{t,i} - Q_{0.05, t}}
+    {Q_{0.95, t} - Q_{0.05, t}}
+```
+
+If the rescaled trait values were below zero or above one, the values were
+set to zero or one respectively.
+"""
+function similarity_matrix(; scaled_traits)
+    nspecies, ntraits = size(scaled_traits)
+    similarity_mat = Array{Float64}(undef, nspecies, nspecies)
+
+    for i in 1:nspecies
+        diff = zeros(nspecies)
+
+        for n in 1:ntraits
+            species_trait = scaled_traits[i, n]
+            diff .+= abs.(species_trait .- scaled_traits[: , n])
+        end
+
+        similarity_mat[i, :] .= 1 .- (diff ./ ntraits)
+    end
+
+    return similarity_mat
+end
+
+
+
+@doc raw"""
+    below_ground_competition(;
+        biomass, trait_similarity, nspecies,
+        below_competition_strength)
+
+Models the below-ground competiton between plant.
+
+Plant growth is reduced if a large biomass of plant species with similar
+functional traits is already present. The `below_competition` factor has
+a value between 0 and 1. For plant species $i$ with $N$ plant species present
+it is defined as follows:
+
+```math
+\text{below_competition}_i =
+    exp\left(-\frac{\text{below_competition_strength}}{1000} \cdot
+        \left[\sum_{u=1}^{u=N} \text{trait_similarity}_{i,u} \cdot \text{biomass}_u\right]
+    \right)
+```
+
+The `below_competition_strength` can therefore be seen as a parameter that
+controls the density dependence.
+
+The `trait_similarity` is computed by the function [`similarity_matrix`](@ref)
+and includes the traits specific leaf area (`SLA`),
+arbuscular mycorrhizal colonisation rate (`AMC`),
+and the root surface area devided by the above ground biomass (`SRSA_above`).
+"""
 function below_ground_competition(;
     biomass, trait_similarity, nspecies,
     below_competition_strength)
@@ -73,7 +145,7 @@ function below_ground_competition(;
 
     for i in 1:nspecies
         x = sum(trait_similarity[i, :] .* biomass)
-        reduction_coefficient[i] = exp(-below_competition_strength * x)
+        reduction_coefficient[i] = exp(-below_competition_strength/1000 * x)
     end
 
     return reduction_coefficient
@@ -86,9 +158,7 @@ Calculates the potential growth of all plant species
 in a specific patch.
 
 This function is called each time step (day) for each patch.
-The NamedTuple `p` contains all the species specific trait values.
-The vector `biomass` contains the biomass of the species in
-the specific patch. The `PAR` value is the photosynthetically
+The `PAR` value is the photosynthetically
 active radiation of the day.
 
 First, the leaf area indices of all species are calculated
@@ -97,7 +167,8 @@ computed. An inverse exponential function is used to calculate
 the total primary production:
 
 ```math
-\text{totalgrowth} = 10 \cdot PAR \cdot RUE_{max} \cdot (1 -  \text{exp}(-\alpha \cdot \text{LAItot}))
+\text{totalgrowth} =
+    PAR \cdot RUE_{max} \cdot (1 -  \text{exp}(-\alpha \cdot \text{LAItot}))
 ```
 
 This primary production is then multiplied with the share of the
@@ -113,13 +184,13 @@ function potential_growth(; SLA, nspecies, biomass, PAR)
         return fill(0.0, nspecies)u"kg / ha / d", LAItot
     end
 
-    RUE_max = 3u"g / MJ" # Maximum radiation use efficiency g DM MJ-1
+    RUE_max = 3//1000 * u"kg / MJ" # Maximum radiation use efficiency 3 g DM MJ-1
     α = 0.6   # Extinction coefficient, unitless
 
     total_growth = PAR * RUE_max * (1 - exp(-α * LAItot))
     species_growth = total_growth .* lais ./ LAItot
 
-    return uconvert.(u"kg / ha / d", species_growth), LAItot
+    return species_growth, LAItot
 end
 
 

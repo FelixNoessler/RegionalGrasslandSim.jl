@@ -34,6 +34,7 @@ function scenario_input(;
         nutrient_index,
         WHC,
         PWP,
+        initbiomass = 500u"kg/ha",
         grazing_start=[],
         grazing_end=[],
         grazing_intensity=[],
@@ -73,7 +74,8 @@ function scenario_input(;
         site=(;
             nutrient_index,
             WHC=WHC * u"mm",
-            PWP=PWP * u"mm"
+            PWP=PWP * u"mm",
+            initbiomass
         ),
         traits=trait_data,
         relative_traits=relative_trait_data,

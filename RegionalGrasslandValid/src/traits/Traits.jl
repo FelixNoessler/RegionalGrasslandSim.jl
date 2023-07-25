@@ -12,6 +12,8 @@ struct GM
     ϕ
 end
 
+include("traits_output.jl")
+
 function load_data(datapath)
     ########### parameters for gaussian mixture model
     μ, Σ, ϕ = load("$datapath/input/traits_gaussian_mixture.jld2", "μ", "Σ", "ϕ")
@@ -82,7 +84,7 @@ end
 
 function relative_traits(; trait_data)
     trait_data = ustrip.(trait_data)
-    nspecies, ntraits = size(trait_data)
+    ntraits = size(trait_data, 2)
 
     #### calculate extrema from more data
     many_traits = random_traits(100;)

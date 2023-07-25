@@ -73,14 +73,17 @@ function water_reduction(;
         return 1.0
     end
 
-    x = WR > WHC ? 1.0 : WR > PWP ? (WR - PWP) / (WHC - PWP) : 0.0
+    ## option 1: water reduction purely by water availability
+    # x = WR > WHC ? 1.0 : WR > PWP ? (WR - PWP) / (WHC - PWP) : 0.0
 
-    ## could be added: on days with high PET, more water is needed
-    # PETₘₐₓ= 8u"mm / d",
-    # β₁=6.467,
-    # β₂=7.623e-8
-    # exp_fun = -(β₂*PET/PETₘₐₓ + (1-PET/PETₘₐₓ)*β₁)
-    # x = (1 - exp(exp_fun*W) ) / (1-exp(exp_fun))
+    ## option 2: water reduction by water availability and
+    ##           potential evapotranspiration
+    W = WR > WHC ? 1.0 : WR > PWP ? (WR - PWP) / (WHC - PWP) : 0.0
+    PETₘₐₓ= 8u"mm / d"
+    β₁=6.467
+    β₂=7.623e-8
+    exp_fun = -(β₂*PET/PETₘₐₓ + (1-PET/PETₘₐₓ)*β₁)
+    x = (1 - exp(exp_fun*W) ) / (1-exp(exp_fun))
 
     ### ------------ species specific functional response
     sla_y = sla_water_reduction(; fun_response, x, max_SLA_water_reduction)

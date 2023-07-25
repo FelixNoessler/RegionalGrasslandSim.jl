@@ -133,7 +133,12 @@ function trampling(; LD, biomass, CH, nspecies, trampling_factor)
     trampled_biomass = @. biomass * 0.5 * (1 - cos(π*LD/ω))
 
     if any(LD .> ω)
-        @warn "Very high lifestock densities (LD=$LD)!"
+        @warn """
+              trampling removed all biomass of at least one plant species
+              during one day:
+              - lifestock density LD=$(round(ustrip(LD); digits=2))
+              - trampling_factor=$(round(ustrip(trampling_factor); digits=2))
+              """ maxlog=3
         high_LD = LD .> ω
         trampled_biomass[high_LD] .= biomass[high_LD]
     end

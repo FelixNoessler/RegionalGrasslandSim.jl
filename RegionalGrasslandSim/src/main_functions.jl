@@ -36,16 +36,11 @@ function one_day!(;
         sen .= 0.0u"kg / (ha * d)"
         LAI_tot = 0
 
-        if any(patch_biomass .< 0u"kg / ha")
-            @error "Patch biomass below zero: $patch_biomass"
+        if any(isnan.(patch_biomass))
+            @error "Patch biomass isnan: $patch_biomass" maxlog=10
         end
 
-        # if any(isnan.(patch_biomass))
-        #     @error "Patch biomass isnan: $patch_biomass"
-        # end
-
         if sum(patch_biomass) > 0u"kg / ha"
-
             # -------------- mowing
             if day_of_year ∈ p.mowing_days[year]
                 mowing_index = day_of_year .== p.mowing_days[year]
@@ -109,10 +104,10 @@ function one_day!(;
                 max_SRSA_nut_reduction=p.inf_p.max_SRSA_nut_reduction)
 
             if any(act_growth .< 0u"kg / (ha * d)")
-                @error "act_growth below zero: $act_growth"
+                @error "act_growth below zero: $act_growth" maxlog=10
             end
             if LAI_tot < 0
-                @error "LAI_tot below zero: $LAI_tot"
+                @error "LAI_tot below zero: $LAI_tot" maxlog=10
             end
 
             # -------------- senescence
@@ -122,7 +117,7 @@ function one_day!(;
                                     μ = p.species.μ)
 
         else
-            # @info "Sum of patch biomass !> 0"
+            @warn "Sum of patch biomass = 0" maxlog=10
         end
 
 
@@ -148,7 +143,6 @@ function one_day!(;
 
         o_evaporation[pa] = evaporation
         du_water[pa] = water_change
-
     end
 
     return nothing
@@ -159,34 +153,15 @@ end
 
 TBW
 """
-function initial_conditions(; npatches, nspecies)
+function initial_conditions(; initbiomass, npatches, nspecies)
     u_biomass = fill(
-        500 / nspecies,
+        initbiomass / nspecies,
         npatches,
-        nspecies)u"kg / ha"
+        nspecies)
     u_water = fill(180.0, npatches)u"mm"
 
     return u_biomass, u_water
 end
-
-function similarity_matrix(; traits)
-    nspecies, ntraits = size(traits)
-    similarity_mat = Array{Float64}(undef, nspecies, nspecies)
-
-    for i in 1:nspecies
-        diff = zeros(nspecies)
-
-        for n in 1:ntraits
-            species_trait = traits[i, n]
-            diff .+= abs.(species_trait .- traits[: , n])
-        end
-
-        similarity_mat[i, :] .= 1 .- (diff ./ ntraits)
-    end
-
-    return similarity_mat
-end
-
 
 """
     initialize_parameters(; input_obj)
@@ -220,8 +195,8 @@ function initialize_parameters(; input_obj)
 
     #--------- Distance matrix for below ground competition
     rel_t = input_obj.relative_traits
-    trait_similarity = similarity_matrix(;
-        traits=hcat(rel_t.SLA, rel_t.SRSA_above, rel_t.AMC))
+    trait_similarity = Growth.similarity_matrix(;
+        scaled_traits=hcat(rel_t.SLA, rel_t.SRSA_above, rel_t.AMC))
 
     #--------- store everything in one object
     p = (;
@@ -268,24 +243,25 @@ TBW
 function solve_prob(; input_obj)
     p = initialize_parameters(; input_obj)
     tmax = input_obj.nyears * 365
-    ts = collect(0:tmax)
+    ts = collect(1:tmax)
 
     #### initial conditions of the state variables
     u_biomass, u_water = initial_conditions(;
         nspecies=p.nspecies,
-        npatches=p.npatches)
+        npatches=p.npatches,
+        initbiomass=p.site.initbiomass)
 
     #### output vectors of the state variables
     u_output_biomass = Array{Quantity{Float64}}(undef, length(ts), p.npatches, p.nspecies)
     u_output_water = Array{Quantity{Float64}}(undef, length(ts), p.npatches)
 
-    u_output_biomass[1, :, :] = u_biomass
-    u_output_water[1, :] = u_water
+    # u_output_biomass[1, :, :] = u_biomass
+    # u_output_water[1, :] = u_water
 
     #### outputs that are not states
     o_evaporation = fill(NaN, p.npatches)u"mm/d"
     o_output_evaporation = Array{Quantity{Float64}}(undef, length(ts), p.npatches)
-    o_output_evaporation[1, :] = o_evaporation
+    # o_output_evaporation[1, :] = o_evaporation
 
     #### vectors that store the change of the state variables
     du_biomass = Array{Quantity{Float64}}(undef, p.npatches, p.nspecies)
@@ -297,7 +273,7 @@ function solve_prob(; input_obj)
     act_growth = zeros(p.nspecies)u"kg / (ha * d)"
     sen = zeros(p.nspecies)u"kg / (ha * d)"
 
-    for (i,t) in enumerate(ts[2:end])
+    for t in ts
         one_day!(;
             du_biomass, du_water,
             u_biomass, u_water,
@@ -310,10 +286,10 @@ function solve_prob(; input_obj)
         u_biomass += du_biomass * u"d"
         u_water += du_water * u"d"
 
-        u_output_biomass[i+1, :, :] = u_biomass
-        u_output_water[i+1, :] = u_water
+        u_output_biomass[t, :, :] = u_biomass
+        u_output_water[t, :] = u_water
 
-        o_output_evaporation[i+1, :] = o_evaporation
+        o_output_evaporation[t, :] = o_evaporation
     end
 
     u_output_biomass[iszero.(u_output_biomass)] .= 0u"kg / ha"

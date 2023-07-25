@@ -39,7 +39,14 @@ water_reduction
 nutrient_reduction
 seasonal_reduction
 ```
+--
 
+## Below-ground competition
+
+```@docs
+below_ground_competition
+similarity_matrix
+```
 --- 
 ## Leaf senescence
 
