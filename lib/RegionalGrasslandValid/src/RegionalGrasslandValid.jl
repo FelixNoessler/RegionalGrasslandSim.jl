@@ -19,7 +19,7 @@ export optimize_biomass
 
 function __init__()
     @info "Loading data of RegionalGrasslandValid"
-    datapath = "../RegionalGrasslandData"
+    datapath = "../lib/RegionalGrasslandData"
     load_data(datapath)
     Traits.load_data(datapath)
 end

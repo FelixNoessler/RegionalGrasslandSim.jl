@@ -14,7 +14,7 @@ export scenario_input
 
 function __init__()
     @info "Loading data of RegionalGrasslandScenario"
-    datapath = "../RegionalGrasslandData"
+    datapath = "../lib/RegionalGrasslandData"
 
     AirTemperature.load_data(datapath)
     PAR.load_data(datapath)
