@@ -213,8 +213,8 @@ function dashboard(sim, valid, scen; inf_p_start)
         "max_AMC_nut_reduction",
         "max_SRSA_nut_reduction",
     ]
-    p_lower = [0.1, 0.1, 0.1, 0.1, 1e-6, 0, 0.0, 50.0, 50, 10, 0.0, 0.0, 0.0, 0.0]
-    p_upper = [100000, 100, 100, 1.2, 1e-1, 10, 5, 200.0, 5000, 150, 1.0, 1.0, 1.0, 1.0]
+    p_lower = [0.1, 0.1, 0.1, 0.1, 1e-6, 0, 0.0, 50.0, 50, 5, 0.0, 0.0, 0.0, 0.0]
+    p_upper = [100000, 100, 100, 1.2, 2, 40, 5, 200.0, 5000, 150, 1.0, 1.0, 1.0, 1.0]
     param_slider_prep = [(label = parameter_names[i],
         range = p_lower[i]:0.0001:p_upper[i],
         format = "{:.3f}",
