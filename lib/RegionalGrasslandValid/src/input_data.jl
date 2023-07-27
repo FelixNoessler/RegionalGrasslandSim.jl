@@ -17,17 +17,17 @@ function validation_input(;
     graz_sub = @subset data.input.graz :plotID.==plotID
 
     ### ----------------- initial biomass
-    initbiomass = initbiomass_sub.biomass_init[1] * u"kg / ha"
+    initbiomass = initbiomass_sub.biomass_init[1]
 
     ### ----------------- abiotic
-    temperature = clim_sub.Ta_200 .* u"°C"
+    temperature = clim_sub.Ta_200
     temperature_sum = yearly_temp_cumsum(temperature)
-    precipitation = clim_sub.precipitation .* u"mm / d"
-    PAR = par_sub.PAR .* 10000 .* u"MJ / (d * ha)"
-    PET = pet_sub.PET .* u"mm / d"
+    precipitation = clim_sub.precipitation
+    PAR = par_sub.PAR .* 10000
+    PET = pet_sub.PET
     nutrient_index = nut_sub.n_index[1]
-    WHC = soil_sub.WHC[1] * u"mm"
-    PWP = soil_sub.PWP[1] * u"mm"
+    WHC = soil_sub.WHC[1]
+    PWP = soil_sub.PWP[1]
     Clay = soil_sub.Clay[1]
     Silt = soil_sub.Silt[1]
     Sand = soil_sub.Sand[1]
@@ -83,7 +83,7 @@ function validation_input(;
                          for y in 1:nyears]
 
     ### derive the final grazing density vector
-    grazing_density = fill(0.0u"ha ^ -1", 365 * nyears)
+    grazing_density = fill(0.0, 365 * nyears)
     for y in 1:nyears
         for i in eachindex(grazing_start[y])
             start_day = 365 * (y - 1) + grazing_start[y][i]
@@ -94,7 +94,7 @@ function validation_input(;
                isa(livestock_density, Number)
                 end_day = min(365 * nyears, end_day)
 
-                grazing_density[start_day:end_day] .= livestock_density .* u"ha ^ -1"
+                grazing_density[start_day:end_day] .= livestock_density
             end
         end
     end

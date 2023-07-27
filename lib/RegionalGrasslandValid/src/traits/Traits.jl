@@ -41,13 +41,6 @@ function random_traits(n; back_transform = true)
             exp, exp, exp,
         ]
 
-        units = [
-            u"mm^2", u"mg", u"mg",          # leaf traits
-            NoUnits, u"m^2/g", NoUnits,     # root traits,
-            u"m",              # LEDA
-            u"g/g", u"mg/g", # TRY
-        ]
-
         traits = Array{Quantity{Float64}}(undef,
             n,
             length(transformations))
@@ -61,13 +54,12 @@ function random_traits(n; back_transform = true)
 
         for (i, t) in enumerate(transformations)
             trait = t.(log_logit_traits[i, :])
-            unit_vector = repeat([units[i]], n)
-            traits[:, i] .= trait .* unit_vector
+            traits[:, i] .= trait
         end
 
         trait_df = DataFrame(traits, trait_names)
         trait_df.SLA = trait_df.LA ./ trait_df.LDM
-        trait_df.SLA = uconvert.(u"m^2/g", trait_df.SLA)
+        trait_df.SLA = trait_df.SLA ./ 1000
 
         trait_df.SRSA_above = trait_df.SRSA .* trait_df.BA
 
