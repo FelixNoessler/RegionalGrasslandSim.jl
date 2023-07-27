@@ -1,7 +1,12 @@
+# include("../lib/RegionalGrasslandValid/scripts/optimization.jl")
+
 using Metaheuristics
 using RegionalGrasslandValid
 import StatsBase
 import RegionalGrasslandSim as sim
+import RegionalGrasslandVis as vis
+using CairoMakie
+Makie.inline!(true)
 
 function run_optimization(;
     f_calls_limit = Inf,
@@ -18,7 +23,7 @@ function run_optimization(;
         "max_AMC_nut_reduction", "max_SRSA_nut_reduction",
     ]
 
-    training_plots = ["$(explo)$(lpad(i, 2, "0"))" for i in 1:50 for explo in explos]
+    training_plots = ["$(explo)$(lpad(i, 2, "0"))" for i in 1:9 for explo in explos]
     function ll_batch(X)
         selected_plots = StatsBase.sample(training_plots, batch_size; replace = false)
         @info selected_plots
@@ -40,9 +45,9 @@ function run_optimization(;
         return vec(sum(abs.(ll_mat); dims = 2))
     end
 
-    #    σ_bio  σ_ev σ_mo m_c  s_i s_r  below tram graz mow SRSA SLA  AMC  SRSA_n
-    lb = [1000, 0, 0, 0.1, 0, 0, 0.0, 50, 250, 5, 0.0, 0.0, 0.0, 0.0]
-    ub = [1010, 100, 100, 1.2, 5, 100, 15, 200, 1000, 25, 1.0, 1.0, 1.0, 1.0]
+    #    σ_bio  σ_ev σ_mo m_c s_i s_r below tram graz mow SRSA SLA  AMC  SRSA_n
+    lb = [  0,   0,   0, 0.1, 0,   0,  0,  50, 250, 5, 0.0, 0.0, 0.0, 0.0]
+    ub = [5e3, 100, 100, 1.2, 5, 100, 15, 200, 1000, 25, 1.0, 1.0, 1.0, 1.0]
     bounds = boxconstraints(; lb, ub)
 
     options = Options(;
@@ -53,25 +58,35 @@ function run_optimization(;
         debug = true,
         parallel_evaluation = true)
 
+    live_plot(st) = begin
+        @show vals = st.best_sol.x
+        # plotID = rand(training_plots)
+        # inf_p = (; zip(Symbol.(param_names), vals)...)
+        # data, sol = get_plottingdata(sim;
+        #     plotID,
+        #     inf_p,
+        #     startyear = 2012,
+        #     endyear = 2021);
+        # display(vis.biomass_validation(data, sol; plotID))
+    end
+
     ## DE or ECA
-    D = length(param_names)
-    K = 7
-    algorithm = ECA(; η_max = 2.0, K, N = 100, adaptive = true, options = options)
-    result = optimize(ll_batch, bounds, algorithm)
+    algorithm = ECA(; options = options)
+    result = optimize(ll_batch, bounds, algorithm, logger=live_plot)
     @show minimizer(result)
 
     return result
 end
 
 optim_result = run_optimization(;
-    explos = ["HEG"],
-    batch_size = 2,
-    iterations = 25)
+    explos = ["AEG"],
+    batch_size = 9,
+    iterations = 30)
 
-using GLMakie
+
 let
     f_calls, best_f_value = convergence(optim_result)
-    fig, _ = lines(f_calls, maximum.(best_f_value), label = "ECA")
+    fig, _ = lines(f_calls, best_f_value, label = "ECA")
 
     # f_calls, best_f_value = convergence(optim_result1)
     # lines!(f_calls, best_f_value, label="DE")
