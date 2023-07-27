@@ -6,6 +6,11 @@ function loglikelihood_model(sim::Module; inf_p, plotID)
         startyear = 2012,
         endyear = 2021)
 
+    ########################## prior
+    pdist_sigma_biomass = truncated(Normal(0, 1000); lower=0)
+    p_sigma_biomass = logpdf(pdist_sigma_biomass, inf_p.sigma_biomass)
+
+
     ########################## Calculate likelihood
     ################## satellite biomass
     ### select the days where we have biomass estimated by the satellite images
@@ -15,7 +20,7 @@ function loglikelihood_model(sim::Module; inf_p, plotID)
     biomass_sum = vec(sum(ustrip.(sim_biomass); dims = 3))
 
     ### calculate the likelihood
-    biomass_d = MvNormal(biomass_sum, inf_p.sigma_biomass * I)
+    biomass_d = MvNormal(biomass_sum, inf_p.sigma_biomass^2 * I)
     ll_satbiomass = logpdf(biomass_d, data.biomass)
 
     ################## measured biomass
@@ -26,22 +31,23 @@ function loglikelihood_model(sim::Module; inf_p, plotID)
     biomass_sum = vec(sum(ustrip.(sim_biomass); dims = 3))
 
     ### calculate the likelihood
-    biomass_d = MvNormal(biomass_sum, inf_p.sigma_biomass * I)
+    biomass_d = MvNormal(biomass_sum, inf_p.sigma_biomass^2 * I)
     ll_measuredbiomass = logpdf(biomass_d, data.measured_biomass[f])
 
     ################## soil moisture
     sim_soilwater = ustrip.(sol.water)[data.soilmoisture_t]
     sim_soilmoisture = sim_soilwater ./ sol.p.site.root_depth .* inf_p.moisture_conv
-    soilmoisture_d = MvNormal(sim_soilmoisture, inf_p.sigma_soilmoisture * I)
+    soilmoisture_d = MvNormal(sim_soilmoisture, inf_p.sigma_soilmoisture^2 * I)
     ll_soilmoisture = logpdf(soilmoisture_d, data.soilmoisture)
 
     ################## total log likelihood
     @info """
           sat: $ll_satbiomass, mea: $ll_measuredbiomass, mois: $ll_soilmoisture
-          """ maxlog=30
-    ll = ll_satbiomass + ll_measuredbiomass + ll_soilmoisture
+          $p_sigma_biomass
+          """ maxlog=3
+    ll =  ll_measuredbiomass #+ ll_soilmoisture ll_satbiomass +
 
-    return ll
+    return ll + p_sigma_biomass
 end
 
 VIP_plots = ["$(explo)0$i" for i in 1:9 for explo in ["HEG", "SEG", "AEG"]];
