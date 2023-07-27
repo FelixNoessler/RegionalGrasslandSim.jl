@@ -30,8 +30,8 @@ function mowing(;
     mowing_mid_days)
 
     # --------- mowing parameter λ
-    mown_height = CH .- mowing_height / 100 * u"m"
-    mown_height = max.(mown_height, 0.01u"m")
+    mown_height = CH .- mowing_height / 100
+    mown_height = max.(mown_height, 0.01)
     λ = mown_height ./ CH
 
     # --------- if meadow is too often mown, less biomass is removed
@@ -40,7 +40,7 @@ function mowing(;
     mow_factor = 1 / (1 + exp(-0.05 * (days_since_last_mowing - mowing_mid_days)))
 
     # --------- biomass that is removed by mowing
-    removed_biomass = mow_factor .* λ .* biomass .* u"d^-1"
+    removed_biomass = mow_factor .* λ .* biomass
 
     return removed_biomass
 end
@@ -72,17 +72,17 @@ Influence of `grazing_half_factor` (`LD` is set to 2):
 """
 function grazing(; LD, biomass, ρ, nspecies, grazing_half_factor)
     if iszero(LD)
-        return zeros(nspecies)u"kg / (ha * d)"
+        return zeros(nspecies)
     end
 
-    κ = 22u"kg / d"
+    κ = 22
 
     k_exp = 2
     μₘₐₓ = κ * LD
     h = 1 / μₘₐₓ
     a = 1 / (grazing_half_factor^k_exp * h)
 
-    graz = a * sum(biomass)^k_exp / (1u"kg / ha"^k_exp + a * h * sum(biomass)^k_exp)
+    graz = a * sum(biomass)^k_exp / (1^k_exp + a * h * sum(biomass)^k_exp)
     share = (ρ .* biomass) ./ sum(ρ .* biomass)
 
     return graz .* share
@@ -120,26 +120,26 @@ species will be removed. This is unlikely to be the case.
 """
 function trampling(; LD, biomass, CH, nspecies, trampling_factor)
     if iszero(LD)
-        return zeros(nspecies)u"kg/(ha*d)"
+        return zeros(nspecies)
     end
 
     ## higher values of the trampling factor
     ## --> less loss due to trampling
     ## values shouldn't be lower than 50,
     ## otherwise (larger) plants are too heavily influenced
-    ω = @. trampling_factor / ustrip(CH)^0.25 * u"1/ha"
+    ω = @. trampling_factor / CH^0.25
     trampled_biomass = @. biomass * 0.5 * (1 - cos(π * LD / ω))
 
     if any(LD .> ω)
         @warn """
               trampling removed all biomass of at least one plant species
               during one day:
-              - lifestock density LD=$(round(ustrip(LD); digits=2))
-              - trampling_factor=$(round(ustrip(trampling_factor); digits=2))
+              - lifestock density LD=$(round(LD; digits=2))
+              - trampling_factor=$(round(trampling_factor; digits=2))
               """ maxlog=3
         high_LD = LD .> ω
         trampled_biomass[high_LD] .= biomass[high_LD]
     end
 
-    return trampled_biomass .* u"d^-1"
+    return trampled_biomass
 end

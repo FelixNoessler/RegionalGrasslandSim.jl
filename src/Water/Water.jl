@@ -12,7 +12,7 @@ function change_water_reserve(;
     PET, WHC, PWP)
 
     # Maximal measured value of PET
-    # PETₘₐₓ= 8u"mm / d"
+    # PETₘₐₓ= 8
 
     # -------- Evapotranspiration
     AEv = evaporation(; WR, WHC, PET, LAI_tot)
@@ -29,7 +29,7 @@ function change_water_reserve(;
 end
 
 function actual_evapotranspiration(; WR, ATr, AEv)
-    return min(WR * u"d^-1", ATr + AEv)
+    return min(WR, ATr + AEv)
 end
 
 """
@@ -77,8 +77,8 @@ end
 Δ(𝑡) = max(𝑊𝑅(𝑡) + 𝑃 (𝑡) − 𝐴𝐸𝑇 (𝑡) − 𝑊𝐻𝐶 ; 0)
 """
 function water_drainage(; WR, precipitation, WHC, AET)
-    return max(WR * u"d^-1" + precipitation - WHC * u"d^-1" - AET,
-        0.0u"mm / d")
+    return max(WR + precipitation - WHC - AET,
+        0.0)
 end
 
 end # of module

@@ -137,7 +137,6 @@ function below_ground_competition(;
     biomass, trait_similarity, nspecies,
     below_competition_strength)
     reduction_coefficient = Array{Float64}(undef, nspecies)
-    biomass = ustrip.(biomass)
 
     for i in 1:nspecies
         x = sum(trait_similarity[i, :] .* biomass)
@@ -177,10 +176,10 @@ function potential_growth(; SLA, nspecies, biomass, PAR)
     LAItot = sum(lais)
 
     if LAItot == 0
-        return fill(0.0, nspecies)u"kg / ha / d", LAItot
+        return fill(0.0, nspecies), LAItot
     end
 
-    RUE_max = 3 // 1000 * u"kg / MJ" # Maximum radiation use efficiency 3 g DM MJ-1
+    RUE_max = 3 // 1000 # Maximum radiation use efficiency 3 g DM MJ-1
     α = 0.6   # Extinction coefficient, unitless
 
     total_growth = PAR * RUE_max * (1 - exp(-α * LAItot))
@@ -205,7 +204,7 @@ Calculate the leaf area index of all species of one habitat patch.
 """
 function calculate_LAI(; SLA, biomass)
     LAM = 0.62 # Proportion of laminae in green biomass
-    return uconvert.(NoUnits, SLA .* biomass .* LAM)
+    return SLA .* biomass .* LAM
 end
 
 end # of module

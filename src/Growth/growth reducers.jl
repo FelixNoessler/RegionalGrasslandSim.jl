@@ -10,9 +10,9 @@ Reduction of radiation use efficiency at light intensities higher than 5 ``MJ\cd
 ![Image of the radiation reducer function](../../img/radiation_reducer.svg)
 """
 function radiation_reduction(; PAR)
-    γ1 = 0.0445u"m^2 * d / MJ" # Empirical parameter for a decrease
+    γ1 = 0.0445 # Empirical parameter for a decrease
     # in RUE for high PAR values, m2 d MJ-1
-    γ2 = 5.0u"MJ / (m^2 * d)" # Threshold value of PAR from which starts
+    γ2 = 5.0 # Threshold value of PAR from which starts
     # a linear decrease in RUE, MJ m2 d-1
 
     return min(1.0, 1.0 − γ1 * (PAR − γ2))
@@ -26,8 +26,6 @@ TBW
 ![Image of the temperature reducer function](../../img/temperature_reducer.svg)
 """
 function temperature_reduction(; T)
-    T = ustrip(T)
-
     T₀ = 3  #u"°C"
     T₁ = 12 #u"°C"
     T₂ = 20 #u"°C"
@@ -78,7 +76,7 @@ function water_reduction(;
     ## option 2: water reduction by water availability and
     ##           potential evapotranspiration
     W = WR > WHC ? 1.0 : WR > PWP ? (WR - PWP) / (WHC - PWP) : 0.0
-    PETₘₐₓ = 8u"mm / d"
+    PETₘₐₓ = 8
     β₁ = 6.467
     β₂ = 7.623e-8
     exp_fun = -(β₂ * PET / PETₘₐₓ + (1 - PET / PETₘₐₓ) * β₁)
