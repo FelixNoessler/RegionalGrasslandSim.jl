@@ -41,7 +41,7 @@ function random_traits(n; back_transform = true)
             exp, exp, exp,
         ]
 
-        traits = Array{Quantity{Float64}}(undef,
+        traits = Array{Float64}(undef,
             n,
             length(transformations))
         traitdf_names = [
