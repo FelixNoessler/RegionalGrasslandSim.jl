@@ -15,7 +15,7 @@ function radiation_reduction(; PAR)
     γ2 = 5.0 # Threshold value of PAR from which starts
     # a linear decrease in RUE, MJ m2 d-1
 
-    return min(1.0, 1.0 − γ1 * (PAR − γ2))
+    return min(1.0, 1.0 − γ1 * (PAR/10000 − γ2))
 end
 
 """
