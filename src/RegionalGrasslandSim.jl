@@ -1,6 +1,7 @@
 module RegionalGrasslandSim
 
 using JLD2
+using ComponentArrays
 using Unitful
 using Distributions
 
