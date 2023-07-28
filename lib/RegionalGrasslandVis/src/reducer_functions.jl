@@ -74,6 +74,50 @@ function radiation_reducer(sim;
     return nothing
 end
 
+
+function ch_influence(sim;
+        path = nothing,
+        CH_strength)
+    fig = Figure(; resolution = (700, 400))
+    ax = Axis(fig[1, 1];
+        ylabel = "Plant height growth factor (CHinfluence)",
+        xlabel = "Plant height (CH) [m]")
+
+    biomass = fill(10, 3)u"kg / ha"
+    CH = [NaN, 0.1, 0.5]u"m"
+
+    CH_vals = 0.0:0.01:1.0
+    growth_factors = Array{Float64}(undef, 3, length(CH_vals))
+
+
+
+    for (i,CH_1) in enumerate(CH_vals)
+        CH[1] = CH_1 * u"m"
+        fs = sim.Growth.height_influence(; biomass, CH, CH_strength)
+        growth_factors[:, i] .= fs
+    end
+    ax.title = "CH_strength = $(CH_strength)"
+    lines!(CH_vals, growth_factors[1, :];
+        label = "varied CH on x-Axis",
+        linewidth = 3)
+    lines!(CH_vals, growth_factors[2, :];
+        label = "CH=$(CH[2])",
+        linewidth = 3)
+    lines!(CH_vals, growth_factors[3, :];
+        label = "CH=$(CH[3])",
+        linewidth = 3)
+    Legend(fig[1,2], ax; framevisible = false)
+
+    if !isnothing(path)
+        save(path, fig;)
+    else
+        display(fig)
+    end
+
+    return nothing
+end
+
+
 function seasonal_effect(sim;
     STs = LinRange(0, 3500, 1000),
     path = nothing)
