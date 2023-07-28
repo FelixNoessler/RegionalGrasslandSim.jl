@@ -221,14 +221,14 @@ function potential_growth(sim;
     PARs = LinRange(0, 12, 10)u"MJ * d^-1 * m^-2",
     path = nothing)
     SLA = round.(sort(ustrip.(SLA)); digits = 4) .* unit(SLA[1])
-
-    pot_growth = Array{Float64}(undef, nspecies, 10)
+    pot_growth_final = Array{Float64}(undef, nspecies, 10)
+    LAIs = Array{Float64}(undef, nspecies)
+    pot_growth = fill(NaN, nspecies)u"kg / (ha * d)"
 
     for (i, PAR) in enumerate(PARs)
-        growth_par, _ = sim.Growth.potential_growth.(;
-            SLA, nspecies, biomass, PAR)
-
-        pot_growth[:, i] .= ustrip.(growth_par)
+        sim.Growth.potential_growth(;
+            SLA, nspecies, biomass, PAR, LAIs, pot_growth)
+        pot_growth_final[:, i] .= ustrip.(pot_growth)
     end
 
     fig = Figure(; resolution = (800, 400))
@@ -242,7 +242,7 @@ function potential_growth(sim;
     colorrange = (minimum(sla), maximum(sla))
 
     for i in nspecies:-1:1
-        lines!(ustrip.(PARs), pot_growth[i, :];
+        lines!(ustrip.(PARs), pot_growth_final[i, :];
             label = "$(sla[i])",
             colormap,
             colorrange,
