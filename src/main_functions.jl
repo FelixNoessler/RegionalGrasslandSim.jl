@@ -9,17 +9,7 @@
 
 TBW
 """
-function one_day!(;
-    du_biomass,
-    du_water,
-    u_water,
-    u_biomass,
-    o_evaporation,
-    defoliation,
-    act_growth,
-    sen,
-    p,
-    t)
+function one_day!(; calc, p, t)
     day_of_year = t - ((t - 1) ÷ 365 * 365)
     year = 1 + (t - 1) ÷ 365
 
@@ -27,13 +17,10 @@ function one_day!(;
         # --------------------- biomass dynamics
         ### this line is needed because it is possible
         ## that there are numerical errors
-        u_biomass[pa, u_biomass[pa, :] .< 1e-10u"kg / ha"] .= 0u"kg / ha"
-        patch_biomass = u_biomass[pa, :]
-
-        defoliation .= 0.0u"kg / (ha * d)"
-        act_growth .= 0.0u"kg / (ha * d)"
-        sen .= 0.0u"kg / (ha * d)"
-        LAI_tot = 0
+        calc.u_biomass[pa, calc.u_biomass[pa, :] .< 1e-10u"kg / ha"] .= 0u"kg / ha"
+        patch_biomass = @view calc.u_biomass[pa, :]
+        patch_water = calc.u_water[pa]
+        calc.defoliation .= 0.0u"kg / (ha * d)"
 
         if any(isnan.(patch_biomass))
             @error "Patch biomass isnan: $patch_biomass" maxlog=10
@@ -47,71 +34,42 @@ function one_day!(;
 
                 last_day_index = findfirst(mowing_index) - 1
                 days_since_last_mowing = 200
-
                 if last_day_index > 0
                     days_since_last_mowing = day_of_year -
                                              p.mowing_days[year][last_day_index][1]
                 end
 
-                mown_biomass = Growth.mowing(;
+                calc.defoliation += Growth.mowing(;
                     mowing_height,
                     days_since_last_mowing,
                     CH = p.species.CH,
                     biomass = patch_biomass,
                     mowing_mid_days = p.inf_p.mowing_mid_days)
-                defoliation += mown_biomass
             end
 
             # -------------- grazing
-            grazed_biomass = Growth.grazing(;
+            calc.defoliation += Growth.grazing(;
                 LD = p.grazing[t],
                 biomass = patch_biomass,
                 ρ = p.species.ρ,
                 nspecies = p.nspecies,
                 grazing_half_factor = p.inf_p.grazing_half_factor)
-            defoliation += grazed_biomass
 
-            trampled_biomass = Growth.trampling(;
+            calc.defoliation += Growth.trampling(;
                 LD = p.grazing[t],
                 biomass = patch_biomass,
                 CH = p.species.CH,
                 nspecies = p.nspecies,
                 trampling_factor = p.inf_p.trampling_factor)
-            defoliation += trampled_biomass
 
             # -------------- growth
-            act_growth, LAI_tot = Growth.growth(;
-                nspecies = p.nspecies,
-                fun_response = p.species.fun_response,
-                trait_similarity = p.trait_similarity,
-                below_competition_strength = p.inf_p.below_competition_strength,
-                SLA = p.species.SLA,
-                CH = p.species.CH,
-                biomass = patch_biomass,
-                PAR = p.env_data.PAR[t],
-                WR = u_water[pa],
-                WHC = p.site.WHC,
-                PWP = p.site.PWP,
-                nutrients = p.site.nutrient_index,
-                PET = p.env_data.PET[t],
-                T = p.env_data.temperature[t],
-                ST = p.env_data.temperature_sum[t],
-                water_red = p.water_reduction,
-                nutrient_red = p.nutrient_reduction,
-                max_SRSA_water_reduction = p.inf_p.max_SRSA_water_reduction,
-                max_SLA_water_reduction = p.inf_p.max_SLA_water_reduction,
-                max_AMC_nut_reduction = p.inf_p.max_AMC_nut_reduction,
-                max_SRSA_nut_reduction = p.inf_p.max_SRSA_nut_reduction)
-
-            if any(act_growth .< 0u"kg / (ha * d)")
-                @error "act_growth below zero: $act_growth" maxlog=10
-            end
-            if LAI_tot < 0
-                @error "LAI_tot below zero: $LAI_tot" maxlog=10
-            end
+            Growth.growth(;
+                t, p, calc,
+                biomass=patch_biomass,
+                WR=patch_water)
 
             # -------------- senescence
-            sen = Growth.senescence(;
+            calc.sen = Growth.senescence(;
                 ST = p.env_data.temperature_sum[t],
                 biomass = patch_biomass,
                 μ = p.species.μ)
@@ -120,28 +78,22 @@ function one_day!(;
             @warn "Sum of patch biomass = 0" maxlog=10
         end
 
-        # -------------- deterministic
-        determin = act_growth .- sen .- defoliation
-
         # -------------- stochasticity
         # max_loss = max.(patch_biomass .+ determin .* u"d", 0u"kg / ha")
         # ds = [truncated(Normal(0, 0.5); lower=-0.2*l, upper=l) for l in ustrip.(max_loss)]
         # stochas = rand.(ds)u"kg / (ha * d)"
 
         # -------------- net growth
-        du_biomass[pa, :] = determin #.+ stochas
+        calc.du_biomass[pa, :] = calc.act_growth - calc.sen - calc.defoliation
 
         # --------------------- water dynamics
-        water_change, evaporation = Water.change_water_reserve(;
-            WR = u_water[pa],
+        calc.du_water[pa], calc.o_evaporation[t, pa] = Water.change_water_reserve(;
+            WR = calc.u_water[pa],
             precipitation = p.env_data.precipitation[t],
-            LAI_tot,
+            LAItot = calc.LAItot,
             PET = p.env_data.PET[t],
             WHC = p.site.WHC,
             PWP = p.site.PWP)
-
-        o_evaporation[pa] = evaporation
-        du_water[pa] = water_change
     end
 
     return nothing
@@ -225,6 +177,7 @@ function initialize_parameters(; input_obj)
     return p
 end
 
+
 """
     solve_prob(; input_obj)
 
@@ -241,52 +194,57 @@ function solve_prob(; input_obj)
         npatches = p.npatches,
         initbiomass = p.site.initbiomass)
 
-    #### output vectors of the state variables
-    u_output_biomass = Array{Quantity{Float64}}(undef, length(ts), p.npatches, p.nspecies)
-    u_output_water = Array{Quantity{Float64}}(undef, length(ts), p.npatches)
+    calc = ComponentVector(;
+        ### vectors that store the state variables
+        u_biomass,
+        u_water,
 
-    # u_output_biomass[1, :, :] = u_biomass
-    # u_output_water[1, :] = u_water
+        #### vectors that store the change of the state variables
+        du_biomass = zeros(p.npatches, p.nspecies)u"kg / (ha * d)",
+        du_water = zeros(p.npatches)u"mm / d",
 
-    #### outputs that are not states
-    o_evaporation = fill(NaN, p.npatches)u"mm/d"
-    o_output_evaporation = Array{Quantity{Float64}}(undef, length(ts), p.npatches)
-    # o_output_evaporation[1, :] = o_evaporation
+        #### vectors that are used in the calculations
+        defoliation = fill(NaN, p.nspecies)u"kg / (ha * d)",
+        act_growth = fill(NaN, p.nspecies)u"kg / (ha * d)",
+        pot_growth = fill(NaN, p.nspecies)u"kg / (ha * d)",
+        sen = fill(NaN, p.nspecies)u"kg / (ha * d)",
+        LAIs = fill(NaN, p.nspecies),
+        LAItot = NaN,
 
-    #### vectors that store the change of the state variables
-    du_biomass = Array{Quantity{Float64}}(undef, p.npatches, p.nspecies)
-    du_water = Array{Quantity{Float64}}(undef, p.npatches)
+        CHinfluence = fill(NaN, p.nspecies),
+        Waterred = fill(NaN, p.nspecies),
+        Nutred = fill(NaN, p.nspecies),
+        below = fill(NaN, p.nspecies),
+        species_specific_red = fill(NaN, p.nspecies),
 
-    #### vectors that are used in the calculations
-    defoliation = zeros(p.nspecies)u"kg / (ha * d)"
-    act_growth = zeros(p.nspecies)u"kg / (ha * d)"
-    sen = zeros(p.nspecies)u"kg / (ha * d)"
+        #### output vectors of the state variables
+        o_biomass = fill(NaN, length(ts), p.npatches, p.nspecies)u"kg/ha",
+        o_water = fill(NaN, length(ts), p.npatches)u"mm",
 
-    for t in ts
-        one_day!(;
-            du_biomass, du_water,
-            u_biomass, u_water,
-            o_evaporation,
-            defoliation,
-            act_growth,
-            sen,
-            p, t)
+        #### outputs that are not states
+        o_evaporation = fill(NaN, length(ts), p.npatches)u"mm/d"
+    )
 
-        u_biomass += du_biomass * u"d"
-        u_water += du_water * u"d"
-
-        u_output_biomass[t, :, :] = u_biomass
-        u_output_water[t, :] = u_water
-
-        o_output_evaporation[t, :] = o_evaporation
-    end
-
-    u_output_biomass[iszero.(u_output_biomass)] .= 0u"kg / ha"
+    main_loop!(; calc, ts, p)
+    calc.o_biomass[iszero.(calc.o_biomass)] .= 0u"kg / ha"
 
     return (;
-        biomass = u_output_biomass,
-        water = u_output_water,
-        evaporation = o_output_evaporation,
+        biomass = calc.o_biomass,
+        water = calc.o_water,
+        evaporation = calc.o_evaporation,
         t = ts,
         p = p)
+end
+
+
+function main_loop!(; calc, ts, p)
+    for t in ts
+        one_day!(; calc, p, t)
+
+        calc.u_biomass += calc.du_biomass * u"d"
+        calc.u_water += calc.du_water * u"d"
+
+        calc.o_biomass[t, :, :] = calc.u_biomass
+        calc.o_water[t, :] = calc.u_water
+    end
 end
