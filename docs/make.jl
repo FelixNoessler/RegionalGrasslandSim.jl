@@ -1,5 +1,4 @@
 ####### build the documentation locally
-# cd RegionalGrasslandSim
 # julia --project=docs/ --startup-file=no
 # using Revise; import Pkg; Pkg.instantiate(); Pkg.develop(path="lib/RegionalGrasslandVis/"); Pkg.develop(path="."); include("docs/make.jl")
 ## to redo the documentation:
@@ -47,6 +46,8 @@ vis.sla_water_response(sim;
 #### reducer functions
 vis.temperatur_reducer(sim; path = "docs/src/img/temperature_reducer.svg")
 vis.radiation_reducer(sim; path = "docs/src/img/radiation_reducer.svg")
+vis.ch_influence(sim; path = "docs/src/img/ch_influence_05.svg", CH_strength=0.5)
+vis.ch_influence(sim; path = "docs/src/img/ch_influence_08.svg", CH_strength=0.8)
 
 #### seasonal effects
 vis.seasonal_effect(sim; path = "docs/src/img/seasonal_reducer.svg")
