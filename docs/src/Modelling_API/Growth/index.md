@@ -19,13 +19,13 @@ growth
 ```@docs
 potential_growth
 calculate_LAI
-community_weighted_mean_height
 ```
 
 ----
 ## [Reducer functions](@id reducer_functions)
 The growth of each plant species in each patch is dependent on... 
 - ☀ the photosynthetically active radiation [`radiation_reduction`](@ref)
+- the height of the plants in relation to the community weighted mean height [`height_influence`](@ref)
 - 🌡 the air temperature [`temperature_reduction`](@ref)
 - 💧 the [soil water content](@ref water_stress)
 - the [plant-available nutrients](@ref nut_stress)
@@ -34,6 +34,8 @@ The growth of each plant species in each patch is dependent on...
 
 ```@docs
 radiation_reduction
+height_influence
+community_weighted_mean_height
 temperature_reduction
 water_reduction
 nutrient_reduction
