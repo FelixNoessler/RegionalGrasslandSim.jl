@@ -8,15 +8,15 @@ using Unitful
 TBW
 """
 function change_water_reserve(;
-    WR, precipitation, LAI_tot,
+    WR, precipitation, LAItot,
     PET, WHC, PWP)
 
     # Maximal measured value of PET
     # PETₘₐₓ= 8u"mm / d"
 
     # -------- Evapotranspiration
-    AEv = evaporation(; WR, WHC, PET, LAI_tot)
-    ATr = transpiration(; WR, PWP, WHC, PET, LAI_tot)
+    AEv = evaporation(; WR, WHC, PET, LAItot)
+    ATr = transpiration(; WR, PWP, WHC, PET, LAItot)
     AET = actual_evapotranspiration(; WR, ATr, AEv)
 
     # -------- Drainage
@@ -45,7 +45,7 @@ function transpiration(;
     WR,
     PWP, WHC,
     PET,
-    LAI_tot)
+    LAItot)
 
     # β₁ = 6.467 # unitless
     # β₂ = 7.623e-8 # unitless
@@ -56,7 +56,7 @@ function transpiration(;
     # plant available water:
     W = max(0.0, (WR - PWP) / (WHC - PWP))
 
-    transpi = W * PET * LAI_tot / 3
+    transpi = W * PET * LAItot / 3
 
     return transpi
 end
@@ -66,9 +66,9 @@ end
 
 Aev(t) = WR(t) / WHC * PET(t)*[1 - min(1; LAI_tot(t)/3) ]
 """
-function evaporation(; WR, WHC, PET, LAI_tot)
+function evaporation(; WR, WHC, PET, LAItot)
     W = WR / WHC
-    return W * PET * (1 - min(1, LAI_tot / 3))
+    return W * PET * (1 - min(1, LAItot / 3))
 end
 
 """
