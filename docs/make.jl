@@ -14,8 +14,7 @@ import RegionalGrasslandVis as vis
 ####### Create Bilbiography
 using DocumenterCitations
 bib = CitationBibliography("docs/src/lit.bib";
-    style = :numeric,
-    cached = true)
+    style = :numeric)
 
 ####### create images for the document
 docs_img = "docs/src/img"
