@@ -1,5 +1,5 @@
 @doc raw"""
-    radiation_reduction(; PAR)
+    radiation_reduction(; PAR, radiation_red)
 
 Reduction of radiation use efficiency at light intensities higher than 5 ``MJ\cdot m^{-2}\cdot d^{-1}``
 
@@ -9,7 +9,12 @@ Reduction of radiation use efficiency at light intensities higher than 5 ``MJ\cd
 **comment to the equation/figure:** PAR values are usually between 0 and 15 ``MJ\cdot m^{-2}\cdot d^{-1}`` and therefore negative values of Rred are very unlikely
 ![Image of the radiation reducer function](../../img/radiation_reducer.svg)
 """
-function radiation_reduction(; PAR)
+function radiation_reduction(; PAR, radiation_red)
+    if !radiation_red
+        @info "No radiation reduction!" maxlog=1
+        return 1.0
+    end
+
     γ1 = 0.0445u"m^2 * d / MJ" # Empirical parameter for a decrease
     # in RUE for high PAR values, m2 d MJ-1
     γ2 = 5.0u"MJ / (m^2 * d)" # Threshold value of PAR from which starts
@@ -19,13 +24,18 @@ function radiation_reduction(; PAR)
 end
 
 """
-    temperature_reduction(; T)
+    temperature_reduction(; T, temperature_red)
 
 TBW
 
 ![Image of the temperature reducer function](../../img/temperature_reducer.svg)
 """
-function temperature_reduction(; T)
+function temperature_reduction(; T, temperature_red)
+    if !temperature_red
+        @info "No temperature reduction!" maxlog=1
+        return 1.0
+    end
+
     T = ustrip(T)
 
     T₀ = 3  #u"°C"
@@ -47,28 +57,31 @@ function temperature_reduction(; T)
 end
 
 """
-    water_reduction(;
+    water_reduction!(;
+        Waterred,
+        sla_water,
+        srsa_water,
         fun_response,
         WR,
         water_red,
-        max_SLA_water_reduction,
-        max_SRSA_water_reduction,
         PET,
         PWP,
         WHC)
 
 See for details: [Water stress](@ref water_stress)
 """
-function water_reduction(;
+function water_reduction!(;
+    Waterred,
+    sla_water,
+    srsa_water,
     fun_response,
     WR,
     water_red,
-    max_SLA_water_reduction,
-    max_SRSA_water_reduction,
     PET,
     PWP,
     WHC)
     if !water_red
+        @info "No water reduction!" maxlog=1
         return 1.0
     end
 
@@ -85,117 +98,129 @@ function water_reduction(;
     x = (1 - exp(exp_fun * W)) / (1 - exp(exp_fun))
 
     ### ------------ species specific functional response
-    sla_y = sla_water_reduction(; fun_response, x, max_SLA_water_reduction)
-    srsa_y = srsa_water_reduction(; fun_response, x, max_SRSA_water_reduction)
+    sla_water_reduction!(; sla_water, fun_response, x)
+    srsa_water_reduction!(; srsa_water, fun_response, x)
 
-    return sla_y .* srsa_y
+    @. Waterred = sla_water * srsa_water
+
+    return nothing
 end
 
 """
-    sla_water_reduction(; fun_response, x, max_SLA_water_reduction)
+    sla_water_reduction!(;
+        sla_water,
+        fun_response,
+        x)
 
 TBW
 """
-function sla_water_reduction(;
+function sla_water_reduction!(;
+    sla_water,
     fun_response,
-    x,
-    max_SLA_water_reduction)
+    x)
     k_SLA = 5
-    A_SLA = 1 - max_SLA_water_reduction
-    return @. A_SLA +
-              (1 - A_SLA) /
-              (1 + exp(-k_SLA * (x - fun_response.sla_water_midpoint)))
+
+    @. sla_water = fun_response.sla_water_lower +
+                   (1 - fun_response.sla_water_lower) /
+                   (1 + exp(-k_SLA * (x - fun_response.sla_water_midpoint)))
+
+    return nothing
 end
 
 """
-    srsa_water_reduction(; fun_response, x, max_SRSA_water_reduction)
+    srsa_water_reduction!(; srsa_water, fun_response, x)
 
 TBW
 """
-function srsa_water_reduction(; fun_response, x, max_SRSA_water_reduction)
+function srsa_water_reduction!(; srsa_water, fun_response, x)
     k_SRSA = 7
-    A_SRSA = 1 - max_SRSA_water_reduction
-    K_SRSA_prep = fun_response.srsa_right_bound
-    K_SRSA = @. K_SRSA_prep + (1 - K_SRSA_prep) * A_SRSA
 
-    return @. A_SRSA +
-              (K_SRSA - A_SRSA) /
-              (1 + exp(-k_SRSA * (x - fun_response.srsa_midpoint)))
+    @. srsa_water = fun_response.srsa_water_lower +
+                    (fun_response.srsa_water_upper - fun_response.srsa_water_lower) /
+                    (1 + exp(-k_SRSA * (x - fun_response.srsa_midpoint)))
+    return nothing
 end
 
 """
-    nutrient_reduction(;
+    nutrient_reduction!(;
+        Nutred,
+        amc_nut,
+        srsa_nut,
         fun_response,
         nutrient_red,
-        nutrients,
-        max_AMC_nut_reduction,
-        max_SRSA_nut_reduction)
+        nutrients)
 
 See for details: [Nutrient stress](@ref nut_stress)
 """
-function nutrient_reduction(;
+function nutrient_reduction!(;
+    Nutred,
+    amc_nut,
+    srsa_nut,
     fun_response,
     nutrient_red,
-    nutrients,
-    max_AMC_nut_reduction,
-    max_SRSA_nut_reduction)
+    nutrients)
     if !nutrient_red
+        @info "No nutrient reduction!" maxlog=1
         return 1.0
     end
 
     ### ------------ species specific functional response
-    amc_red = amc_nut_reduction(; fun_response, x = nutrients, max_AMC_nut_reduction)
-    srsa_red = srsa_nut_reduction(; fun_response, x = nutrients, max_SRSA_nut_reduction)
+    amc_nut_reduction!(; amc_nut, fun_response, x = nutrients)
+    srsa_nut_reduction!(; srsa_nut, fun_response, x = nutrients)
 
-    return max.(amc_red, srsa_red)
+    @. Nutred = max(amc_nut, srsa_nut)
+
+    return nothing
 end
 
 """
-    amc_nut_reduction(; fun_response, x, max_AMC_nut_reduction)
+    amc_nut_reduction!(; amc_nut, fun_response, x)
 
 TBW
 """
-function amc_nut_reduction(; fun_response, x, max_AMC_nut_reduction)
+function amc_nut_reduction!(; amc_nut, fun_response, x)
     k_AMC = 7
-    A_AMC = 1 - max_AMC_nut_reduction
-    K_AMC_prep = fun_response.myco_nutr_right_bound
-    K_AMC = @. K_AMC_prep + (1 - K_AMC_prep) * A_AMC
 
-    return @. A_AMC +
-              (K_AMC - A_AMC) /
-              (1 + exp(-k_AMC * (x - fun_response.myco_nutr_midpoint)))
+    @. amc_nut = fun_response.myco_nut_lower +
+                 (fun_response.myco_nut_upper - fun_response.myco_nut_lower) /
+                 (1 + exp(-k_AMC * (x - fun_response.myco_nut_midpoint)))
+    return nothing
 end
 
 """
-    srsa_nut_reduction(; fun_response, x, max_SRSA_nut_reduction)
+    srsa_nut_reduction!(; srsa_nut, fun_response, x)
 
 TBW
 """
-function srsa_nut_reduction(; fun_response, x, max_SRSA_nut_reduction)
+function srsa_nut_reduction!(; srsa_nut, fun_response, x)
     k_SRSA = 7
-    A_SRSA = 1 - max_SRSA_nut_reduction
-    K_SRSA_prep = fun_response.srsa_right_bound
-    K_SRSA = @. K_SRSA_prep + (1 - K_SRSA_prep) * A_SRSA
 
-    return @. A_SRSA +
-              (K_SRSA - A_SRSA) /
-              (1 + exp(-k_SRSA * (x - fun_response.srsa_midpoint)))
+    @. srsa_nut = fun_response.srsa_nut_lower +
+                  (fun_response.srsa_nut_upper - fun_response.srsa_nut_lower) /
+                  (1 + exp(-k_SRSA * (x - fun_response.srsa_midpoint)))
+    return nothing
 end
 
 """
-    seasonal_reduction()
+    seasonal_reduction(; ST, season_red)
 
 TBW
 
 ![Image of the seasonal effect function](../../img/seasonal_reducer.svg)
 """
-function seasonal_reduction(;
-    ST)
+function seasonal_reduction(; ST, season_red)
+    if !season_red
+        @info "No seasonal reduction!" maxlog=1
+        return 1.0
+    end
+
     SEAₘᵢₙ = 0.67 # unitless
     SEAₘₐₓ = 1.33 # unitless
 
     ST₁ = 625  # u"°C d"
     ST₂ = 1300 # u"°C d"
+
+    ST = ustrip(ST)
 
     if ST < 200
         return SEAₘᵢₙ

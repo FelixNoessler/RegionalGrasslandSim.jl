@@ -2,6 +2,7 @@ module RegionalGrasslandScenario
 
 using Unitful
 using DataFrames
+using TimeSeries
 
 include("climate_analysis/AirTemperature.jl")
 include("climate_analysis/PAR.jl")
@@ -26,20 +27,30 @@ function __init__()
 end
 
 function scenario_input(;
-    explo, nyears, nspecies,
     inf_p,
-    npatches = 1,
-    mowing_days = [Vector{Int64}() for _ in 1:nyears],
-    mowing_heights = [Vector{Int64}() for _ in 1:nyears],
+    nyears,
+    nspecies,
+    explo,
+    mowing_doys,
+    grazing_start,
+    grazing_end,
+    grazing_intensity,
     nutrient_index,
     WHC,
     PWP,
+    npatches = 1,
     initbiomass = 500u"kg/ha",
-    grazing_start = [],
-    grazing_end = [],
-    grazing_intensity = [],
-    water_reduction,
-    nutrient_reduction)
+    senescence_included = true,
+    potgrowth_included = true,
+    mowing_included = true,
+    grazing_included = true,
+    below_included = true,
+    height_included = true,
+    water_red = true,
+    nutrient_red = true,
+    temperature_red = true,
+    season_red = true,
+    radiation_red = true)
     temp_data = AirTemperature.predict_temperature(;
         nyears,
         explo)
@@ -60,29 +71,53 @@ function scenario_input(;
         grazing_intensity,
         nyears)
 
-    return (env_data = (;
-            PAR = par_data,
-            precipitation = precipitation_data,
-            temperature = temp_data,
-            temperature_sum = AirTemperature.yearly_temp_cumsum(temp_data),
-            PET = evapo_data),
-        inf_p,
+    mowing_data = Landuse.mowing_input(;
+        mowing_doys,
+        nyears,
+        cutting_height = 0.07u"m")
+
+    d = Dates.Date(0):Dates.lastdayofyear(Dates.Date(nyears - 1))
+    f = Dates.dayofyear.(d) .<= 365
+
+    daily_data = (;
+        date = d[f],
+        temperature = temp_data,
+        temperature_sum = AirTemperature.yearly_temp_cumsum(temp_data),
+        precipitation = precipitation_data,
+        PET = evapo_data,
+        PAR = par_data,
+        mowing = mowing_data,
+        grazing = grazing_data)
+
+    #### -------------- whether parts of the simulation are included
+    included = (;
+        senescence_included,
+        potgrowth_included,
+        mowing_included,
+        grazing_included,
+        below_included,
+        height_included,
+        water_red,
+        nutrient_red,
+        temperature_red,
+        season_red,
+        radiation_red)
+
+    return (inf_p,
+        nspecies,
+        npatches,
+        included,
+        startyear = 0,
+        endyear = nyears,
         site = (;
             nutrient_index,
             WHC = WHC * u"mm",
             PWP = PWP * u"mm",
             initbiomass),
-        traits = trait_data,
-        relative_traits = relative_trait_data,
-        mowing_days,
-        mowing_heights,
-        grazing = grazing_data,
-        nutrient_index,
-        nspecies,
-        npatches,
-        water_reduction,
-        nutrient_reduction,
-        nyears)
+        traits = (; zip(Symbol.(names(trait_data)), eachcol(trait_data))...),
+        relative_traits = (;
+            zip(Symbol.(names(relative_trait_data)), eachcol(relative_trait_data))...),
+        daily_data)
 end
 
 end # module RegionalGrasslandScenario

@@ -3,7 +3,9 @@ module Water
 using Unitful
 
 """
-    change_water_reserve()
+    change_water_reserve(;
+        WR, precipitation, LAItot,
+        PET, WHC, PWP)
 
 TBW
 """
@@ -25,19 +27,24 @@ function change_water_reserve(;
     # -------- Total change in the water reserve
     water_change = precipitation - drain - AET
 
-    return water_change, AEv
+    return water_change
 end
 
+"""
+    actual_evapotranspiration(; WR, ATr, AEv)
+
+TBW
+"""
 function actual_evapotranspiration(; WR, ATr, AEv)
     return min(WR * u"d^-1", ATr + AEv)
 end
 
 """
     transpiration(;
-        WR,
-        PWP, WHC,
-        PET,
-        LAI_tot)
+    WR,
+    PWP, WHC,
+    PET,
+    LAItot)
 
 TBW
 """
@@ -62,7 +69,7 @@ function transpiration(;
 end
 
 """
-    evaporation(; WR, WHC, PET, LAI_tot)
+    evaporation(; WR, WHC, PET, LAItot)
 
 Aev(t) = WR(t) / WHC * PET(t)*[1 - min(1; LAI_tot(t)/3) ]
 """
@@ -72,7 +79,7 @@ function evaporation(; WR, WHC, PET, LAItot)
 end
 
 """
-    water_drainage(; WR, P, WHC, AET)
+    water_drainage(; WR, precipitation, WHC, AET)
 
 Δ(𝑡) = max(𝑊𝑅(𝑡) + 𝑃 (𝑡) − 𝐴𝐸𝑇 (𝑡) − 𝑊𝐻𝐶 ; 0)
 """

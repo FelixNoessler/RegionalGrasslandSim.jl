@@ -3,12 +3,26 @@ function amc_nut_response(sim;
     mycorrhizal_colon = LinRange(0, 0.7, nspecies),
     max_AMC_nut_reduction,
     path = nothing)
-    mycorrhizal_colon = sort(ustrip.(mycorrhizal_colon))
+    A, Ks, x0s = sim.FunctionalResponse.amc_nut_response(;
+        mycorrhizal_colon = sort(mycorrhizal_colon),
+        maximal_reduction = max_AMC_nut_reduction)
 
-    Ks, x0s = sim.FunctionalResponse.amc_nut_response(;
-        mycorrhizal_colon)
+    calc_var = fill(NaN, nspecies)
+    xs = 0:0.01:1
+    ymat = fill(0.0, length(xs), nspecies)
 
-    x = 0:0.01:1
+    fun_response = (;
+        myco_nut_midpoint = x0s,
+        myco_nut_lower = A,
+        myco_nut_upper = Ks)
+
+    for (i, x) in enumerate(xs)
+        sim.Growth.amc_nut_reduction!(;
+            amc_nut = calc_var,
+            fun_response,
+            x)
+        ymat[i, :] .= calc_var
+    end
 
     fig = Figure(resolution = (900, 500))
     Axis(fig[1:2, 1];
@@ -17,14 +31,7 @@ function amc_nut_response(sim;
         title = "Influence of the mycorrhizal colonisation")
 
     for i in eachindex(Ks)
-        fun_response = (;
-            myco_nutr_right_bound = Ks[i],
-            myco_nutr_midpoint = x0s[i])
-        y = sim.Growth.amc_nut_reduction(;
-            fun_response,
-            x,
-            max_AMC_nut_reduction)
-        lines!(x, y;
+        lines!(xs, ymat[:, i];
             color = i,
             colorrange = (1, nspecies))
 
@@ -35,7 +42,7 @@ function amc_nut_response(sim;
             colorrange = (1, nspecies))
 
         ##### midpoint
-        x0_y = Ks[i] / 2
+        x0_y = (Ks[i] - A) / 2 + A
         scatter!([x0s[i]], [x0_y];
             marker = :x,
             color = i,
@@ -74,16 +81,31 @@ end
 
 function srsa_water_response(sim;
     nspecies = 6,
-    SRSA_above = LinRange(0.0, 0.4, nspecies),
+    SRSA_above = LinRange(0.0, 0.4, nspecies)u"m^2 / g",
     max_SRSA_water_reduction,
     path = nothing)
-    SRSA_above = sort(ustrip.(SRSA_above))
+    SRSA_above = collect(sort(SRSA_above))
 
-    Ks, x0s = sim.
-    FunctionalResponse.
-    srsa_response(; SRSA_above)
+    A, Ks, x0s = sim.FunctionalResponse.srsa_response(;
+        SRSA_above,
+        maximal_reduction = max_SRSA_water_reduction)
 
-    x = 0:0.01:1
+    calc_var = fill(NaN, nspecies)
+    xs = 0:0.01:1
+    ymat = fill(0.0, length(xs), nspecies)
+
+    fun_response = (;
+        srsa_midpoint = x0s,
+        srsa_water_lower = A,
+        srsa_water_upper = Ks)
+
+    for (i, x) in enumerate(xs)
+        sim.Growth.srsa_water_reduction!(;
+            srsa_water = calc_var,
+            fun_response,
+            x)
+        ymat[i, :] .= calc_var
+    end
 
     fig = Figure(resolution = (900, 500))
     Axis(fig[1:2, 1],
@@ -91,11 +113,7 @@ function srsa_water_response(sim;
         ylabel = "Growth reduction factor\n← no growth, less reduction →")
 
     for (i, (K, x0)) in enumerate(zip(Ks, x0s))
-        fun_response = (; srsa_right_bound = K, srsa_midpoint = x0)
-        y = sim.Growth.srsa_water_reduction(;
-            fun_response, x, max_SRSA_water_reduction)
-
-        lines!(x, y;
+        lines!(xs, ymat[:, i];
             color = i,
             colorrange = (1, nspecies))
 
@@ -106,7 +124,7 @@ function srsa_water_response(sim;
             colorrange = (1, nspecies))
 
         ##### midpoint
-        x0_y = K / 2
+        x0_y = (K - A) / 2 + A
         scatter!([x0], [x0_y];
             marker = :x,
             color = i,
@@ -117,7 +135,7 @@ function srsa_water_response(sim;
     Axis(fig[1, 2];
         xticklabelsvisible = false,
         ylabel = "Right upper bound")
-    scatter!(SRSA_above, Ks;
+    scatter!(ustrip.(SRSA_above), Ks;
         marker = :ltriangle,
         color = 1:nspecies,
         colorrange = (1, nspecies))
@@ -125,7 +143,7 @@ function srsa_water_response(sim;
     Axis(fig[2, 2];
         xlabel = "SRSA / above ground biomass",
         ylabel = "Scaled water availability\nat midpoint")
-    scatter!(SRSA_above, x0s;
+    scatter!(ustrip.(SRSA_above), x0s;
         marker = :x,
         color = 1:nspecies,
         colorrange = (1, nspecies))
@@ -145,16 +163,29 @@ end
 
 function srsa_nut_response(sim;
     nspecies = 6,
-    SRSA_above = LinRange(0.0, 0.4, nspecies),
+    SRSA_above = LinRange(0.0, 0.4, nspecies)u"m^2 / g",
     max_SRSA_nut_reduction,
     path = nothing)
-    SRSA_above = sort(ustrip.(SRSA_above))
+    A, Ks, x0s = sim.FunctionalResponse.srsa_response(;
+        SRSA_above = sort(SRSA_above),
+        maximal_reduction = max_SRSA_nut_reduction)
 
-    Ks, x0s = sim.
-    FunctionalResponse.
-    srsa_response(; SRSA_above)
+    calc_var = fill(NaN, nspecies)
+    xs = 0:0.01:1
+    ymat = fill(0.0, length(xs), nspecies)
 
-    x = 0:0.01:1
+    fun_response = (;
+        srsa_midpoint = x0s,
+        srsa_nut_lower = A,
+        srsa_nut_upper = Ks)
+
+    for (i, x) in enumerate(xs)
+        sim.Growth.srsa_nut_reduction!(;
+            srsa_nut = calc_var,
+            fun_response,
+            x)
+        ymat[i, :] .= calc_var
+    end
 
     fig = Figure(resolution = (900, 500))
     Axis(fig[1:2, 1],
@@ -162,11 +193,7 @@ function srsa_nut_response(sim;
         ylabel = "Growth reduction factor\n← no growth, less reduction →")
 
     for (i, (K, x0)) in enumerate(zip(Ks, x0s))
-        fun_response = (; srsa_right_bound = K, srsa_midpoint = x0)
-        y = sim.Growth.srsa_nut_reduction(;
-            fun_response, x, max_SRSA_nut_reduction)
-
-        lines!(x, y;
+        lines!(xs, ymat[:, i];
             color = i,
             colorrange = (1, nspecies))
 
@@ -177,7 +204,7 @@ function srsa_nut_response(sim;
             colorrange = (1, nspecies))
 
         ##### midpoint
-        x0_y = K / 2
+        x0_y = (K - A) / 2 + A
         scatter!([x0], [x0_y];
             marker = :x,
             color = i,
@@ -188,7 +215,7 @@ function srsa_nut_response(sim;
     Axis(fig[1, 2];
         xticklabelsvisible = false,
         ylabel = "Right upper bound")
-    scatter!(SRSA_above, Ks;
+    scatter!(ustrip.(SRSA_above), Ks;
         marker = :ltriangle,
         color = 1:nspecies,
         colorrange = (1, nspecies))
@@ -196,7 +223,7 @@ function srsa_nut_response(sim;
     Axis(fig[2, 2];
         xlabel = "SRSA / above ground biomass",
         ylabel = "Nutrient index\nat midpoint")
-    scatter!(SRSA_above, x0s;
+    scatter!(ustrip.(SRSA_above), x0s;
         marker = :x,
         color = 1:nspecies,
         colorrange = (1, nspecies))
@@ -225,10 +252,17 @@ function potential_growth(sim;
     LAIs = Array{Float64}(undef, nspecies)
     pot_growth = fill(NaN, nspecies)u"kg / (ha * d)"
 
+    calc = (; LAIs, pot_growth)
+
     for (i, PAR) in enumerate(PARs)
-        sim.Growth.potential_growth(;
-            SLA, nspecies, biomass, PAR, LAIs, pot_growth)
-        pot_growth_final[:, i] .= ustrip.(pot_growth)
+        sim.Growth.potential_growth!(;
+            calc,
+            potgrowth_included = true,
+            SLA,
+            biomass,
+            PAR)
+
+        pot_growth_final[:, i] .= ustrip.(calc.pot_growth)
     end
 
     fig = Figure(; resolution = (800, 400))
@@ -261,16 +295,15 @@ end
 
 function sla_water_response(sim;
     nspecies = 6,
-    SLA = LinRange(0.009, 0.05, nspecies),
+    SLA = LinRange(0.009, 0.05, nspecies)u"m^2 / g",
     max_SLA_water_reduction,
     path = nothing)
-    SLA = sort(ustrip.(SLA))
+    A, x0s = sim.FunctionalResponse.sla_water_response(;
+        SLA = sort(SLA), maximal_reduction = max_SLA_water_reduction)
+    fun_response = (; sla_water_midpoint = x0s, sla_water_lower = A)
 
-    x0s = sim.
-    FunctionalResponse.
-    sla_water_response(; SLA)
-
-    x = 0:0.01:1
+    xs = 0:0.01:1
+    sla_water = fill(NaN, nspecies)
 
     fig = Figure(resolution = (900, 400))
     Axis(fig[1, 1];
@@ -278,18 +311,24 @@ function sla_water_response(sim;
         ylabel = "Growth reduction factor\n← no growth, less reduction →",
         title = "Influence of the specific leaf area")
 
-    for (i, x0) in enumerate(x0s)
-        fun_response = (; sla_water_midpoint = x0)
-        y = sim.Growth.sla_water_reduction(;
-            fun_response, x,
-            max_SLA_water_reduction)
-        lines!(x, y;
+    ymat = fill(0.0, length(xs), nspecies)
+
+    for (i, x) in enumerate(xs)
+        sim.Growth.sla_water_reduction!(;
+            sla_water,
+            fun_response,
+            x)
+        ymat[i, :] .= sla_water
+    end
+
+    for i in eachindex(x0s)
+        lines!(xs, ymat[:, i];
             color = i,
             colorrange = (1, nspecies))
 
         ##### midpoint
-        x0_y = 0.5
-        scatter!([x0], [x0_y];
+        x0_y = 1 - max_SLA_water_reduction / 2
+        scatter!([x0s[i]], [x0_y];
             marker = :x,
             color = i,
             colorrange = (1, nspecies))
@@ -301,7 +340,7 @@ function sla_water_response(sim;
     Axis(fig[1, 2];
         xlabel = "Specific leaf area [m² g⁻¹]",
         ylabel = "Scaled water availability\nat midpoint")
-    scatter!(SLA, x0s;
+    scatter!(ustrip.(SLA), x0s;
         marker = :x,
         color = 1:nspecies,
         colorrange = (1, nspecies))

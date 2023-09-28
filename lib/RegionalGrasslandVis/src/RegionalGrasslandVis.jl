@@ -18,13 +18,17 @@ function __init__()
     set_global_theme()
 end
 
-include("dashboard.jl")
-include("dashboard_plotting.jl")
-include("functional_response.jl")
-include("reducer_functions.jl")
+include("dashboard/dashboard.jl")
+include("dashboard/dashbaord_layout.jl")
+include("dashboard/dashboard_plotting.jl")
+include("dashboard/dashboard_prepare_input.jl")
+
+include("doc_figures/functional_response.jl")
+include("doc_figures/landuse.jl")
+include("doc_figures/reducer_functions.jl")
+
 include("abiotic.jl")
-include("landuse.jl")
-include("helper_functions.jl")
+
 include("validation/validation.jl")
 
 end # module RegionalGrasslandVis

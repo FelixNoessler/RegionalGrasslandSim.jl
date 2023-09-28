@@ -1,5 +1,5 @@
 @doc raw"""
-    senescence(; ST, biomass, μ)
+    senescence!(; sen, ST, biomass, μ)
 
 ```math
 \begin{align}
@@ -19,17 +19,23 @@
 The parameters $\text{sen_intercept}$ and $\text{sen_rate}$ were divided by 1000 to avoid very low numbers.
 
 """
-function senescence(; ST, biomass, μ)
+function senescence!(; sen, ST, biomass, μ)
     # include a seasonal effect
     # less senescence in spring,
     # high senescens rate in autumn
     SEN = seasonal_component_senescence(; ST)
+    @. sen = μ * SEN * biomass
 
-    return μ .* SEN .* biomass
+    return nothing
 end
 
 @doc raw"""
-    seasonal_component_senescence(; ST)
+    seasonal_component_senescence(;
+        ST,
+        Ψ₁ = 775,
+        Ψ₂ = 3000,
+        SENₘᵢₙ = 1,
+        SENₘₐₓ = 3)
 
 Seasonal factor for the senescence rate.
 
@@ -58,6 +64,7 @@ function seasonal_component_senescence(;
     Ψ₂ = 3000, #u"°C * d"
     SENₘᵢₙ = 1,
     SENₘₐₓ = 3)
+    ST = ustrip(ST)
     lin_increase(ST) = SENₘᵢₙ + (SENₘₐₓ - SENₘᵢₙ) * (ST - Ψ₁) / (Ψ₂ - Ψ₁)
     SEN = ST < Ψ₁ ? SENₘᵢₙ : ST < Ψ₂ ? lin_increase(ST) : SENₘₐₓ
 

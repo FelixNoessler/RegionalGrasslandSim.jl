@@ -1,12 +1,6 @@
 function grazing(sim;
     grazing_half_factor = 1500,
     path = nothing)
-    fig = Figure(; resolution = (700, 400))
-    Axis(fig[1, 1],
-        xlabel = "Total biomass [green dry mass kg ha⁻¹]",
-        ylabel = "Grazed biomass (graz)\n[green dry mass kg ha⁻¹ d⁻¹]",
-        title = "")
-
     nspecies = 3
     nbiomass = 500
 
@@ -14,17 +8,29 @@ function grazing(sim;
     biomass_vec = LinRange(0, 1000, nbiomass)u"kg / ha"
     ρ = [0.9, 1.0, 1.2]
 
+    calc = (;
+        biomass_ρ = fill(0.0, nspecies)u"kg / ha",
+        grazed_share = fill(0.0, nspecies),
+        defoliation = fill(0.0, nspecies)u"kg / (ha * d)")
+
     grazing_mat = Array{Float64}(undef, nspecies, nbiomass)
 
     for (i, biomass) in enumerate(biomass_vec)
-        graz = sim.Growth.grazing(;
+        calc.defoliation .= 0.0u"kg / (ha * d)"
+        sim.Growth.grazing!(;
+            calc,
             LD,
             biomass = repeat([biomass], 3),
             ρ,
-            grazing_half_factor,
-            nspecies)
-        grazing_mat[:, i] = ustrip.(graz)
+            grazing_half_factor)
+        grazing_mat[:, i] = ustrip.(calc.defoliation)
     end
+
+    fig = Figure(; resolution = (700, 400))
+    Axis(fig[1, 1],
+        xlabel = "Total biomass [green dry mass kg ha⁻¹]",
+        ylabel = "Grazed biomass (graz)\n[green dry mass kg ha⁻¹ d⁻¹]",
+        title = "")
 
     for i in 1:nspecies
         lines!(ustrip.(biomass_vec) .* 3, grazing_mat[i, :];
@@ -90,29 +96,37 @@ function trampling(sim;
     LDs = LinRange(0.0, 4.0, nLD)u"ha^-1",
     trampling_factor = 100,
     path = nothing)
-    fig = Figure(; resolution = (700, 400))
+    height = reverse([0.1, 0.2, 0.5, 0.8, 1.0]u"m")
 
-    ## ----------- Influence of CH
-    ax1 = Axis(fig[1, 1],
+    calc = (;
+        trampling_ω = fill(0.0, nspecies)u"ha^-1",
+        trampled_biomass = fill(0.0, nspecies)u"kg / ha",
+        trampling_high_LD = fill(false, nspecies),
+        defoliation = fill(0.0, nspecies)u"kg / (ha * d)")
+
+    trampling_mat_height = Array{Float64}(undef, nspecies, nLD)
+
+    for (i, LD) in enumerate(LDs)
+        calc.defoliation .= 0.0u"kg / (ha * d)"
+        sim.Growth.trampling!(;
+            calc,
+            LD,
+            biomass,
+            height,
+            trampling_factor)
+
+        trampling_mat_height[:, i] = ustrip.(calc.defoliation)
+    end
+    trampling_mat_height = trampling_mat_height ./ 100.0
+
+    fig = Figure(; resolution = (700, 400))
+    Axis(fig[1, 1],
         ylabel = "Proportion of biomass that is\nremoved by trampling [d⁻¹]",
         xlabel = "Livestock density [ha⁻¹]",
         title = "Influence of the plant height")
-    CH = reverse([0.1, 0.2, 0.5, 0.8, 1.0]u"m")
-    trampling_mat_CH = Array{Float64}(undef, nspecies, nLD)
-    for (i, LD) in enumerate(LDs)
-        trampled_biomass = sim.
-        Growth.trampling(;
-            LD,
-            biomass,
-            CH,
-            nspecies,
-            trampling_factor)
-        trampling_mat_CH[:, i] = ustrip.(trampled_biomass)
-    end
-    trampling_mat_CH = trampling_mat_CH ./ 100.0
     for i in 1:nspecies
-        lines!(ustrip.(LDs), trampling_mat_CH[i, :];
-            linewidth = 3, label = "CH=$(CH[i])",
+        lines!(ustrip.(LDs), trampling_mat_height[i, :];
+            linewidth = 3, label = "height=$(height[i])",
             colormap = :viridis,
             colorrange = (1, nspecies),
             color = i)
@@ -131,38 +145,47 @@ end
 function mowing(sim;
     nspecies = 3,
     nbiomass = 3,
-    biomass_vec = LinRange(0, 1000, nbiomass),
-    CH = [0.5, 0.3, 0.1]u"m",
-    mowing_height = 7,
+    biomass_vec = LinRange(0, 1000, nbiomass)u"kg / ha",
+    height = [0.5, 0.3, 0.1]u"m",
+    mowing_height = 0.07u"m",
     mowing_mid_days = 30,
     days_since_last_mowing = 100,
     path = nothing)
+    calc = (;
+        mown_height = fill(0.0, nspecies)u"m",
+        mowing_λ = fill(0.0, nspecies),
+        defoliation = fill(0.0, nspecies)u"kg / (ha * d)")
+
+    mowing_mat = Array{Float64}(undef, nspecies, nbiomass)
+
+    for (i, biomass) in enumerate(biomass_vec)
+        calc.defoliation .= 0.0u"kg / (ha * d)"
+        sim.Growth.mowing!(;
+            calc,
+            mowing_height,
+            days_since_last_mowing,
+            height,
+            biomass,
+            mowing_mid_days)
+
+        mowing_mat[:, i] = ustrip.(calc.defoliation)
+    end
+
     fig = Figure(; resolution = (700, 400))
     Axis(fig[1, 1],
         xlabel = "Total biomass [green dry mass kg ha⁻¹]",
         ylabel = "Maximal amount of biomass that is\nremoved by mowing (mow)\n[green dry mass kg ha⁻¹ d⁻¹]",
         title = "")
-    mowing_mat = Array{Float64}(undef, nspecies, nbiomass)
-
-    for (i, biomass) in enumerate(biomass_vec)
-        mow = sim.Growth.mowing(;
-            biomass = repeat([biomass], nspecies),
-            CH,
-            mowing_height,
-            mowing_mid_days,
-            days_since_last_mowing)
-        mowing_mat[:, i] = ustrip.(mow)
-    end
 
     for i in 1:nspecies
-        lines!(biomass_vec .* nspecies, mowing_mat[i, :];
-            linewidth = 3, label = "CH=$(CH[i])",
+        lines!(ustrip.(biomass_vec) .* nspecies, mowing_mat[i, :];
+            linewidth = 3, label = "height=$(height[i])",
             color = i,
             colorrange = (1, nspecies))
     end
 
     if nspecies <= 5
-        lines!(biomass_vec .* nspecies, vec(sum(mowing_mat, dims = 1));
+        lines!(ustrip.(biomass_vec) .* nspecies, vec(sum(mowing_mat, dims = 1));
             color = :grey,
             markersize = 10,
             label = "total")

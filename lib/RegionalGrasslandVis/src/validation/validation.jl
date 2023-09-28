@@ -5,6 +5,46 @@ function add_nans(t, b)
     return sort(t), b[sortperm(t)]
 end
 
+function biomass_validation2(sim::Module, valid::Module; plotID, inf_p)
+    fig = Figure()
+    Axis(fig[1, 1];
+        xticks = 2012:2:2022,
+        xminorticks = 2012:2022,
+        xminorticksvisible = true,
+        xlabel = "Time [years]",
+        ylabel = "Total biomass [kg/ha]")
+
+    for _ in 1:5
+        data, sol = valid.get_plottingdata(sim;
+            plotID, inf_p,
+            startyear = 2012,
+            endyear = 2021)
+
+        biomass_sim = vec(sum(ustrip.(sol.biomass); dims = 3))
+        sim_t = 2012 .+ sol.t ./ 365
+
+        lines!(sim_t, biomass_sim; color = (:grey, 0.2))
+    end
+
+    data, sol = valid.get_plottingdata(sim;
+        plotID, inf_p,
+        startyear = 2012,
+        endyear = 2021)
+
+    mdata_t = 2012 .+ data.measured_biomass_t ./ 365
+    mdata = data.measured_biomass
+    mdata1 = data.measured_biomass1
+    f_mdata = mdata_t .< 2022 .&& mdata_t .> 2016
+
+    scatter!(mdata_t[f_mdata], mdata[f_mdata],
+        marker = :hexagon, color = :black, markersize = 15,
+        label = "Cutted and weighted biomass")
+    scatter!(mdata_t[f_mdata], mdata1[f_mdata],
+        marker = :hexagon, color = :black, markersize = 15)
+
+    return fig
+end
+
 function biomass_validation(data, sol; plotID = "")
     biomass_sim = vec(sum(ustrip.(sol.biomass); dims = 3))
 
@@ -27,8 +67,8 @@ function biomass_validation(data, sol; plotID = "")
         xlabel = "Time [years]",
         ylabel = "Total biomass [kg/ha]",
         limits = (2011.8, 2022.2, 0, 6000))
-    add_mowing!(ax, sol; years = 2012:2021)
-    add_grazing!(ax, sol; t = sim_t)
+    add_mowing!(ax, sol;)
+    add_grazing!(ax, sol;)
     scatterlines!(data_t,
         data_biomass;
         label = "Statistical satellite model",
@@ -49,22 +89,19 @@ function biomass_validation(data, sol; plotID = "")
     return fig
 end
 
-function add_mowing!(ax, sol; years, ymax = 6000)
-    for i in eachindex(years)
-        mowing_days_year = sol.p.mowing_days[i]
-        year = years[i]
+function add_mowing!(ax, sol; ymax = 6000)
+    mowing_f = .!iszero.(values(sol.p.daily_data.mowing))
+    xs = sol.numeric_date[mowing_f]
 
-        for m in mowing_days_year
-            x = year + m / 365
-            lines!(ax, [x, x], [0.0, ymax]; color = :magenta3)
-        end
+    for x in xs
+        lines!(ax, [x, x], [0.0, ymax]; color = :magenta3)
     end
 end
 
-function add_grazing!(ax, sol; t, ymax = 6000)
-    ylower = fill(0.0, length(t))
-    yupper = (ustrip.(sol.p.grazing) .> 0) .* ymax
-    band!(ax, t, ylower, yupper;
+function add_grazing!(ax, sol; ymax = 6000)
+    ylower = fill(0.0, length(sol.p.daily_data.grazing))
+    yupper = (ustrip.(values(sol.p.daily_data.grazing)) .> 0) .* ymax
+    band!(ax, sol.numeric_date, ylower, yupper;
         color = (:steelblue4, 0.6))
 end
 

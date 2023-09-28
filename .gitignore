@@ -3,4 +3,6 @@ tmp/
 Grassland_data_analysis/
 /Manifest.toml
 *.py
-
+*.mem
+.vscode/
+.Rproj.user

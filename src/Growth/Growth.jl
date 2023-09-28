@@ -1,6 +1,8 @@
 module Growth
 
 using Unitful
+using Distributions
+import LinearAlgebra
 
 include("growth reducers.jl")
 include("defoliation.jl")
@@ -13,55 +15,71 @@ Calculates the actual growth of the plant species.
 """
 function growth(; t, p, calc, biomass, WR)
     #### potential growth
-    calc.LAItot = potential_growth(;
-        pot_growth = calc.pot_growth,
-        LAIs = calc.LAIs,
+    LAItot = potential_growth!(;
+        calc,
+        potgrowth_included = p.potgrowth_included,
         SLA = p.species.SLA,
-        nspecies = p.nspecies,
         biomass,
-        PAR = p.env_data.PAR[t])
+        PAR = p.daily_data.PAR[t])
 
     ### influence of the height of plants
-    calc.CHinfluence .= height_influence(; biomass, CH = p.species.CH)
+    height_influence!(;
+        height_influence = calc.heightinfluence,
+        biomass,
+        height_included = p.height_included,
+        height = p.species.height,
+        biomass_height = calc.biomass_height)
 
     #### below ground competition --> trait similarity and abundance
-    calc.below = below_ground_competition(;
+    below_ground_competition!(;
+        below = calc.below,
+        traitsimilarity_biomass = calc.traitsimilarity_biomass,
         biomass,
+        below_included = p.below_included,
         trait_similarity = p.trait_similarity,
-        nspecies = p.nspecies,
         below_competition_strength = p.inf_p.below_competition_strength)
 
     #### growth reducer
-    calc.Waterred .= water_reduction(;
+    water_reduction!(;
+        Waterred = calc.Waterred,
+        sla_water = calc.sla_water,
+        srsa_water = calc.srsa_water,
         WR,
         PWP = p.site.PWP,
         WHC = p.site.WHC,
         fun_response = p.species.fun_response,
-        water_red = p.water_reduction,
-        PET = p.env_data.PET[t],
-        max_SRSA_water_reduction = p.inf_p.max_SRSA_water_reduction,
-        max_SLA_water_reduction = p.inf_p.max_SLA_water_reduction)
-    calc.Nutred .= nutrient_reduction(;
+        water_red = p.water_red,
+        PET = p.daily_data.PET[t])
+    nutrient_reduction!(;
+        Nutred = calc.Nutred,
+        amc_nut = calc.amc_nut,
+        srsa_nut = calc.srsa_nut,
         fun_response = p.species.fun_response,
-        nutrient_red = p.nutrient_reduction,
-        nutrients = p.site.nutrient_index,
-        max_AMC_nut_reduction = p.inf_p.max_AMC_nut_reduction,
-        max_SRSA_nut_reduction = p.inf_p.max_SRSA_nut_reduction)
-    Rred = radiation_reduction(; PAR = p.env_data.PAR[t])
-    Tred = temperature_reduction(; T = p.env_data.temperature[t])
-    Seasonalred = seasonal_reduction(; ST = p.env_data.temperature_sum[t])
+        nutrient_red = p.nutrient_red,
+        nutrients = p.site.nutrient_index)
+    Rred = radiation_reduction(;
+        PAR = p.daily_data.PAR[t],
+        radiation_red = p.radiation_red)
+    Tred = temperature_reduction(;
+        T = p.daily_data.temperature[t],
+        temperature_red = p.temperature_red)
+    Seasonalred = seasonal_reduction(;
+        ST = p.daily_data.temperature_sum[t],
+        season_red = p.season_red)
 
-
-    @. calc.species_specific_red = calc.CHinfluence * calc.below * calc.Waterred * calc.Nutred
-    reduction = Rred * Tred  * Seasonalred
+    calc.species_specific_red .= calc.heightinfluence .* calc.below .* calc.Waterred .*
+                                 calc.Nutred
+    reduction = Rred * Tred * Seasonalred
 
     #### final growth
-    calc.act_growth .= calc.pot_growth .* reduction .* calc.species_specific_red
-    if any(calc.act_growth .< 0u"kg / (ha * d)")
+    @. calc.act_growth .= calc.pot_growth * reduction * calc.species_specific_red
+
+    @. calc.neg_act_growth = calc.act_growth < 0u"kg / (ha * d)"
+    if any(calc.neg_act_growth)
         @error "act_growth below zero: $(calc.act_growth)" maxlog=10
     end
 
-    return nothing
+    return LAItot
 end
 
 @doc raw"""
@@ -104,12 +122,15 @@ function similarity_matrix(; scaled_traits)
         similarity_mat[i, :] .= 1 .- (diff ./ ntraits)
     end
 
-    return similarity_mat
+    return similarity_mat .* u"ha / kg"
 end
 
 @doc raw"""
-    below_ground_competition(;
-        biomass, trait_similarity, nspecies,
+    below_ground_competition!(;
+        below,
+        traitsimilarity_biomass,
+        biomass, below_included,
+        trait_similarity,
         below_competition_strength)
 
 Models the below-ground competiton between plant.
@@ -134,23 +155,28 @@ and includes the traits specific leaf area (`SLA`),
 arbuscular mycorrhizal colonisation rate (`AMC`),
 and the root surface area devided by the above ground biomass (`SRSA_above`).
 """
-function below_ground_competition(;
-    biomass, trait_similarity, nspecies,
+function below_ground_competition!(;
+    below,
+    traitsimilarity_biomass,
+    biomass, below_included,
+    trait_similarity,
     below_competition_strength)
-    reduction_coefficient = Array{Float64}(undef, nspecies)
-    biomass = ustrip.(biomass)
-
-    for i in 1:nspecies
-        trait_sim = @view trait_similarity[i, :]
-        x = sum(trait_sim .* biomass)
-        reduction_coefficient[i] = exp(-below_competition_strength / 1000 * x)
+    if !below_included
+        @info "No below ground competition!" maxlog=1
+        return 1.0
     end
 
-    return reduction_coefficient
+    LinearAlgebra.mul!(traitsimilarity_biomass, trait_similarity, biomass)
+
+    m = mean(traitsimilarity_biomass)
+
+    @. below = (1 / (1 + below_competition_strength * (traitsimilarity_biomass / m - 1)))
+
+    return nothing
 end
 
 @doc raw"""
-    potential_growth(; pot_growth, LAIs, SLA, nspecies, biomass, PAR)
+    potential_growth!(; calc, SLA, biomass, PAR, potgrowth_included)
 
 Calculates the potential growth of all plant species
 in a specific patch.
@@ -174,57 +200,72 @@ leaf area index of the individual species
 
 ![Influence of the specific leaf area on the potential growth](../../img/sla_potential_growth.svg)
 """
-function potential_growth(; pot_growth, LAIs, SLA, nspecies, biomass, PAR)
-    LAItot = calculate_LAI(; LAIs, SLA, biomass)
+function potential_growth!(; calc, SLA, biomass, PAR, potgrowth_included)
+    LAItot = calculate_LAI(; LAIs = calc.LAIs, SLA, biomass)
     if LAItot < 0
         @error "LAItot below zero: $LAItot" maxlog=10
     end
 
-    if LAItot == 0
-        return fill(0.0, nspecies)u"kg / ha / d"
+    if LAItot == 0 || !potgrowth_included
+        @info "Zero potential growth!" maxlog=1
+        calc.pot_growth .= 0.0u"kg / (ha * d)"
+        return LAItot
     end
 
     RUE_max = 3 // 1000 * u"kg / MJ" # Maximum radiation use efficiency 3 g DM MJ-1
     α = 0.6   # Extinction coefficient, unitless
     pot_growth_tot = PAR * RUE_max * (1 - exp(-α * LAItot))
-    @. pot_growth = pot_growth_tot * LAIs / LAItot
+    @. calc.pot_growth = pot_growth_tot * calc.LAIs / LAItot
 
     return LAItot
 end
 
 @doc raw"""
-    community_weighted_mean_height(; biomass, CH)
+    community_weighted_mean_height(; biomass, height, biomass_height)
 
 ```math
-\text{CH}_{\text{cwm}} =
+\text{height}_{\text{cwm}} =
     \frac{\sum \text{biomass}
-    \cdot \text{CH}}{\sum \text{biomass}}
+    \cdot \text{height}}{\sum \text{biomass}}
 ```
 """
-function community_weighted_mean_height(; biomass, CH)
-    return sum(biomass .* CH) / sum(biomass)
+function community_weighted_mean_height(; biomass, height, biomass_height)
+    biomass_height .= biomass .* height
+    d = sum(biomass_height) / sum(biomass)
+    return d
 end
 
 @doc raw"""
-    height_influence(; biomass, CH, CH_strength = 0.5)
+    height_influence!(;
+        biomass, height, biomass_height,
+        height_included, height_strength = 0.5,
+        height_influence)
 
 ```math
-\text{CHinfluence} =
+\text{heightinfluence} =
     1 +
-    \frac{\text{CH}\cdot\text{CH}_{\text{strength}}}{\text{CH}_{\text{cwm}}}
-    -\text{CH}_{\text{strength}}
+    \frac{\text{height}\cdot\text{height}_{\text{strength}}}{\text{height}_{\text{cwm}}}
+    -\text{height}_{\text{strength}}
 ```
 
-- `CH_strength` lies between 0 (no influence) and 1 (strong influence of the plant height)
-- the community weighted mean height `CH_cwm` is calculated by [`community_weighted_mean_height`](@ref)
+- `height_strength` lies between 0 (no influence) and 1 (strong influence of the plant height)
+- the community weighted mean height `height_cwm` is calculated by [`community_weighted_mean_height`](@ref)
 
 In these plots all three plant species have an equal biomass:
-![](../../img/ch_influence_05.svg)
-![](../../img/ch_influence_08.svg)
+![](../../img/height_influence_01.svg)
+![](../../img/height_influence_05.svg)
 """
-function height_influence(; biomass, CH, CH_strength = 0.5)
-    CH_cwm = community_weighted_mean_height(; biomass, CH)
-    return @. CH * CH_strength / CH_cwm - CH_strength + 1
+function height_influence!(; biomass, height, biomass_height,
+    height_included, height_strength = 0.5, height_influence)
+    if !height_included
+        @info "Height influence turned off!" maxlog=1
+        return 1.0
+    end
+
+    height_cwm = community_weighted_mean_height(; biomass, height, biomass_height)
+    @. height_influence = height * height_strength / height_cwm - height_strength + 1.0
+
+    return nothing
 end
 
 @doc raw"""
@@ -250,7 +291,7 @@ The array `LAIs` is mutated inplace.
 """
 function calculate_LAI(; SLA, biomass, LAIs)
     LAM = 0.62 # Proportion of laminae in green biomass
-    LAIs .= uconvert.(NoUnits, SLA .* biomass * LAM)
+    LAIs .= uconvert.(NoUnits, SLA .* biomass .* LAM)
     return sum(LAIs)
 end
 

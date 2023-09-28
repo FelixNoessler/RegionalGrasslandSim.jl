@@ -13,53 +13,59 @@ import RegionalGrasslandVis as vis
 
 ####### Create Bilbiography
 using DocumenterCitations
-bib = CitationBibliography("docs/src/lit.bib")
+bib = CitationBibliography("docs/src/lit.bib";
+    style = :numeric,
+    cached = true)
 
 ####### create images for the document
+docs_img = "docs/src/img"
+
 #### functional response
-vis.potential_growth(sim; path = "docs/src/img/sla_potential_growth.svg")
+vis.potential_growth(sim; path = "$docs_img/sla_potential_growth.svg")
 vis.srsa_water_response(sim;
-    path = "docs/src/img/srsa_water_response.svg",
+    path = "$docs_img/srsa_water_response.svg",
     max_SRSA_water_reduction = 1)
 vis.srsa_water_response(sim;
-    path = "docs/src/img/srsa_water_response_0_5.svg",
+    path = "$docs_img/srsa_water_response_0_5.svg",
     max_SRSA_water_reduction = 0.5)
 vis.srsa_nut_response(sim;
-    path = "docs/src/img/srsa_nut_response.svg",
+    path = "$docs_img/srsa_nut_response.svg",
     max_SRSA_nut_reduction = 1)
 vis.srsa_nut_response(sim;
-    path = "docs/src/img/srsa_nut_response_0_5.svg",
+    path = "$docs_img/srsa_nut_response_0_5.svg",
     max_SRSA_nut_reduction = 0.5)
 vis.amc_nut_response(sim;
-    path = "docs/src/img/amc_nut_response.svg",
+    path = "$docs_img/amc_nut_response.svg",
     max_AMC_nut_reduction = 1)
 vis.amc_nut_response(sim;
-    path = "docs/src/img/amc_nut_response_0_5.svg",
+    path = "$docs_img/amc_nut_response_0_5.svg",
     max_AMC_nut_reduction = 0.5)
 vis.sla_water_response(sim;
-    path = "docs/src/img/sla_water_response.svg",
+    path = "$docs_img/sla_water_response.svg",
     max_SLA_water_reduction = 1.0)
 vis.sla_water_response(sim;
-    path = "docs/src/img/sla_water_response_0_5.svg",
+    path = "$docs_img/sla_water_response_0_5.svg",
     max_SLA_water_reduction = 0.5)
 
 #### reducer functions
-vis.temperatur_reducer(sim; path = "docs/src/img/temperature_reducer.svg")
-vis.radiation_reducer(sim; path = "docs/src/img/radiation_reducer.svg")
-vis.ch_influence(sim; path = "docs/src/img/ch_influence_05.svg", CH_strength=0.5)
-vis.ch_influence(sim; path = "docs/src/img/ch_influence_08.svg", CH_strength=0.8)
+vis.temperatur_reducer(sim; path = "$docs_img/temperature_reducer.svg")
+vis.radiation_reducer(sim; path = "$docs_img/radiation_reducer.svg")
+vis.height_influence(sim; path = "$docs_img/height_influence_01.svg",
+    height_strength = 0.1)
+vis.height_influence(sim; path = "$docs_img/height_influence_05.svg",
+    height_strength = 0.5)
 
 #### seasonal effects
-vis.seasonal_effect(sim; path = "docs/src/img/seasonal_reducer.svg")
+vis.seasonal_effect(sim; path = "$docs_img/seasonal_reducer.svg")
 vis.seasonal_component_senescence(sim;
-    path = "docs/src/img/seasonal_factor_senescence.svg")
+    path = "$docs_img/seasonal_factor_senescence.svg")
 
 #### land use
-vis.mowing(sim; path = "docs/src/img/mowing.svg")
-vis.mow_factor(; path = "docs/src/img/mow_factor.svg")
-vis.grazing(sim; path = "docs/src/img/grazing.svg")
-vis.grazing_half_factor(; path = "docs/src/img/grazing_half_factor.svg")
-vis.trampling(sim; path = "docs/src/img/trampling.svg")
+vis.mowing(sim; path = "$docs_img/mowing.svg")
+vis.mow_factor(; path = "$docs_img/mow_factor.svg")
+vis.grazing(sim; path = "$docs_img/grazing.svg")
+vis.grazing_half_factor(; path = "$docs_img/grazing_half_factor.svg")
+vis.trampling(sim; path = "$docs_img/trampling.svg")
 
 # for prettyurls you need locally a live server
 makedocs(bib;

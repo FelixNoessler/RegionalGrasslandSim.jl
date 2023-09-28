@@ -1,9 +1,9 @@
 module RegionalGrasslandSim
 
 using JLD2
-using ComponentArrays
 using Unitful
 using Distributions
+import Dates
 
 include("Growth/Growth.jl")
 include("Water/Water.jl")

@@ -1,17 +1,18 @@
 library(BayesianTools)
 
-out <- readRDS("../RegionalGrasslandValid/saved_chains/2023_07_15_dream_14_1000_HEG01.rds")
-
+getwd()
+out <- readRDS("tmp/2023_09_2219.rds")
+out_part <- getSample(out, start = 2000)
 # out
 # getSample(out)
 summary(out)
 
 
-tracePlot(out)
-# correlationPlot(out)
-marginalPlot(out, prior = TRUE, start=1)
-# marginalLikelihood(out)
+traceplot(out)
+correlationPlot(out)
+marginalPlot(out, prior = TRUE, start=2000)
 
 
+getSample(out, 1)
 
 cat(MAP(out)$parametersMAP, sep=", ")

@@ -5,6 +5,7 @@ using Distributions
 using DataFrames
 using JLD2
 using LinearAlgebra
+import Random
 
 struct GM
     μ::Any
@@ -26,7 +27,9 @@ function inverse_logit(x)
     return exp(x) / (1 + exp(x))
 end
 
-function random_traits(n; back_transform = true)
+function random_trait_table(n; seed)
+    Random.seed!(seed)
+
     m = MixtureModel([
             MvNormal(gm.μ[1, :], Hermitian(gm.Σ[1, :, :])),
             MvNormal(gm.μ[2, :], Hermitian(gm.Σ[2, :, :]))],
@@ -34,56 +37,49 @@ function random_traits(n; back_transform = true)
 
     log_logit_traits = rand(m, n)
 
-    if back_transform
-        transformations = [
-            exp, exp, exp, exp, exp,
-            inverse_logit,
-            exp, exp, exp,
-        ]
+    transformations = [
+        exp, exp, exp, exp, exp,
+        inverse_logit,
+        exp, exp, exp,
+    ]
 
-        units = [
-            u"mm^2", u"mg", u"mg",          # leaf traits
-            NoUnits, u"m^2/g", NoUnits,     # root traits,
-            u"m",              # LEDA
-            u"g/g", u"mg/g", # TRY
-        ]
+    units = [
+        u"mm^2", u"mg", u"mg",          # leaf traits
+        NoUnits, u"m^2/g", NoUnits,     # root traits,
+        u"m",              # LEDA
+        u"g/g", u"mg/g", # TRY
+    ]
 
-        traits = Array{Quantity{Float64}}(undef,
-            n,
-            length(transformations))
-        traitdf_names = [
-            "LA_log", "LFM_log", "LDM_log",
-            "BA_log", "SRSA_log", "AMC_logit",
-            "CH_log",
-            "LDMPM_log", "LNCM_log",
-        ]
-        trait_names = first.(split.(traitdf_names, "_"))
+    traits = []
+    traitdf_names = [
+        "LA_log", "LFM_log", "LDM_log",
+        "BA_log", "SRSA_log", "AMC_logit",
+        "height_log",
+        "LDMPM_log", "LNCM_log",
+    ]
+    trait_names = first.(split.(traitdf_names, "_"))
 
-        for (i, t) in enumerate(transformations)
-            trait = t.(log_logit_traits[i, :])
-            unit_vector = repeat([units[i]], n)
-            traits[:, i] .= trait .* unit_vector
-        end
-
-        trait_df = DataFrame(traits, trait_names)
-        trait_df.SLA = trait_df.LA ./ trait_df.LDM
-        trait_df.SLA = uconvert.(u"m^2/g", trait_df.SLA)
-
-        trait_df.SRSA_above = trait_df.SRSA .* trait_df.BA
-
-        return trait_df
-    else
-        return log_logit_traits
+    for (i, t) in enumerate(transformations)
+        trait = t.(log_logit_traits[i, :])
+        unit_vector = repeat([units[i]], n)
+        push!(traits, trait .* unit_vector)
     end
+
+    trait_df = DataFrame(traits, trait_names)
+    trait_df.SLA = trait_df.LA ./ trait_df.LDM
+    trait_df.SLA = uconvert.(u"m^2/g", trait_df.SLA)
+    trait_df.SRSA_above = trait_df.SRSA .* trait_df.BA
+    sort!(trait_df, :SLA)
+
+    return trait_df
 end
 
-function relative_traits(; trait_data)
+function relative_traits(; trait_data, large_trait_data)
     trait_data = ustrip.(trait_data)
     ntraits = size(trait_data, 2)
 
     #### calculate extrema from more data
-    many_traits = random_traits(100;)
-    many_traits = Matrix(ustrip.(many_traits))
+    many_traits = Matrix(ustrip.(large_trait_data))
 
     for i in 1:ntraits
         mint, maxt = quantile(many_traits[:, i], [0.05, 0.95])
@@ -94,6 +90,19 @@ function relative_traits(; trait_data)
     [trait_data[trait_data[:, i] .> 1, i] .= 1.0 for i in 1:ntraits]
 
     return trait_data
+end
+
+function create_traits(n; seed)
+    trait_df = random_trait_table(n; seed)
+    traits = (; zip(Symbol.(names(trait_df)), eachcol(trait_df))...)
+
+    many_traits_df = random_trait_table(100; seed)
+
+    rel_traits_df = relative_traits(;
+        trait_data = trait_df, large_trait_data = many_traits_df)
+    rel_traits = (; zip(Symbol.(names(rel_traits_df)), eachcol(rel_traits_df))...)
+
+    return traits, rel_traits
 end
 
 end

@@ -5,5 +5,4 @@
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
 [docs-dev-url]: https://felixnoessler.github.io/RegionalGrasslandSim.jl/dev/
 
-
-![model overview](assets/model_scatch.svg)
+![model overview](assets/screenshot.png)

@@ -1,17 +1,42 @@
-function get_validation_data(; plotID)
-    soilmoisture_sub = @subset data.valid.soilmoisture :plotID.==plotID
-    evaporation_sub = @subset data.valid.evaporation :plotID.==plotID
-    satbiomass_sub = @subset data.valid.satbiomass :plotID.==plotID
-    measuredveg_sub = @subset data.valid.measuredveg :plotID.==plotID
+function get_validation_data(; plotID, startyear)
+    measuredbiomass_sub = @subset data.valid.measuredbiomass :plotID .==
+                                                             plotID.&&Dates.year.(:date) .<=
+                                                                      2021
+    # trait_sub = @subset data.valid.measuredtraits :plotID.==plotID
+
+    measured_biomass = TimeArray((;
+            biomass = measuredbiomass_sub.biomass,
+            numeric_date = to_numeric.(measuredbiomass_sub.date),
+            date = measuredbiomass_sub.date),
+        timestamp = :date)
+
+    ##############
+    ##############
+    ### soil moisture
+    soilmoisture_sub = @subset data.valid.soilmoisture :plotID .==
+                                                       plotID.&&Dates.year.(:date) .<= 2021
+    soilmoisture = (;
+        val = soilmoisture_sub.soilmoisture,
+        t = Dates.value.(soilmoisture_sub.date .- Dates.Date(startyear)) .+ 1,
+        num_t = to_numeric.(soilmoisture_sub.date))
+
+    ##############
+    ##############
+    ### traits
+    f = plotID .== data.valid.traits.plotID
+    traits = (;
+        val = data.valid.traits.vals[f, :],
+        t = Dates.value.(data.valid.traits.t[f] .- Dates.Date(startyear)) .+ 1,
+        num_t = data.valid.traits.num_t[f],
+        dim = data.valid.traits.dim)
 
     return (;
-        soilmoisture = soilmoisture_sub.soilmoisture,
-        soilmoisture_t = soilmoisture_sub.sol_t,
-        evaporation = evaporation_sub.evaporation,
-        evaporation_t = evaporation_sub.sol_t,
-        biomass = satbiomass_sub.biomass_kg_ha,
-        biomass_t = satbiomass_sub.sol_t,
-        measured_biomass = measuredveg_sub.biomass_kg_ha,
-        measured_biomass1 = measuredveg_sub.biomass1_kg_ha,
-        measured_biomass_t = measuredveg_sub.sol_t)
+        soilmoisture,
+        traits,
+        measured_biomass)
+end
+
+function to_numeric(d::Dates.Date)
+    daysinyear = Dates.daysinyear(Dates.year(d))
+    return Dates.year(d) + (Dates.dayofyear(d) - 1) / daysinyear
 end

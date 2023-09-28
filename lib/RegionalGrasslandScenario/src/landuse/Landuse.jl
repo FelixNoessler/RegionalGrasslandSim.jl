@@ -18,16 +18,16 @@ function fertilisation_input(;
 end
 
 function mowing_input(;
-    dates,
-    nyears)
-    mowing_event = fill(false, 365)
+    mowing_doys,
+    nyears,
+    cutting_height)
+    mowing_height = zeros(365) .* u"m"
 
-    for i in eachindex(dates)
-        my_date = Date(dates[i], dateformat"m-d")
-        mowing_event[dayofyear(my_date)] = true
+    for mowing_doy in mowing_doys
+        mowing_height[mowing_doy] = cutting_height
     end
 
-    return repeat(mowing_event, nyears)
+    return repeat(mowing_height, nyears)
 end
 
 function grazing_input(;

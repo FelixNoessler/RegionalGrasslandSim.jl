@@ -1,14 +1,15 @@
 @doc raw"""
-    mowing(;
+    mowing!(;
+        calc,
         mowing_height,
         days_since_last_mowing,
-        CH,
+        height,
         biomass,
         mowing_mid_days)
 
 ```math
 \begin{align}
-    \lambda &= \frac{\text{mown_height}}{CH}\\
+    \lambda &= \frac{\text{mown_height}}{height}\\
     \text{mow_factor} &= \frac{1}{1+exp(-0.1*(\text{days_since_last_mowing}-\text{mowing_mid_days})}\\
     \text{mow} &= \lambda \cdot \text{biomass}
 \end{align}
@@ -16,37 +17,38 @@
 
 The mow_factor has been included to account for the fact that less biomass is mown
 when the last mowing event was not long ago.
-Influence of mowing for plant species with different heights ($CH$):
+Influence of mowing for plant species with different heights ($height$):
 ![Image of mowing effect](../../img/mowing.svg)
 
 Visualisation of the `mow_factor`:
 ![](../../img/mow_factor.svg)
 """
-function mowing(;
+function mowing!(;
+    calc,
     mowing_height,
     days_since_last_mowing,
-    CH,
+    height,
     biomass,
     mowing_mid_days)
 
     # --------- mowing parameter λ
-    mown_height = CH .- mowing_height / 100 * u"m"
-    mown_height = max.(mown_height, 0.01u"m")
-    λ = mown_height ./ CH
+    calc.mown_height .= height .- mowing_height
+    calc.mown_height .= max.(calc.mown_height, 0.01u"m")
+    calc.mowing_λ .= calc.mown_height ./ height
 
     # --------- if meadow is too often mown, less biomass is removed
     ## the 'mowing_mid_days' is the day where the plants are grown
     ## back to their normal size/2
     mow_factor = 1 / (1 + exp(-0.05 * (days_since_last_mowing - mowing_mid_days)))
 
-    # --------- biomass that is removed by mowing
-    removed_biomass = mow_factor .* λ .* biomass .* u"d^-1"
+    # --------- add the removed biomass to the defoliation vector
+    calc.defoliation .+= mow_factor .* calc.mowing_λ .* biomass .* u"d^-1"
 
-    return removed_biomass
+    return nothing
 end
 
 @doc raw"""
-    grazing(; LD, biomass, ρ, nspecies, grazing_half_factor)
+    grazing!(; calc, LD, biomass, ρ, grazing_half_factor)
 
 ```math
 \begin{align}
@@ -70,30 +72,35 @@ Influence of grazing (livestock density = 2), all plant species have an equal am
 Influence of `grazing_half_factor` (`LD` is set to 2):
 ![](../../img/grazing_half_factor.svg)
 """
-function grazing(; LD, biomass, ρ, nspecies, grazing_half_factor)
-    if iszero(LD)
-        return zeros(nspecies)u"kg / (ha * d)"
-    end
-
+function grazing!(; calc, LD, biomass, ρ, grazing_half_factor)
     κ = 22u"kg / d"
-
     k_exp = 2
     μₘₐₓ = κ * LD
     h = 1 / μₘₐₓ
     a = 1 / (grazing_half_factor^k_exp * h)
 
-    graz = a * sum(biomass)^k_exp / (1u"kg / ha"^k_exp + a * h * sum(biomass)^k_exp)
-    share = (ρ .* biomass) ./ sum(ρ .* biomass)
+    ## Exponentiation of Quantity with a variable is type unstable
+    ## therefore this is a workaround, k_exp = 2
+    # https://painterqubits.github.io/Unitful.jl/stable/trouble/#Exponentiation
+    biomass_exp = sum(biomass)^2
 
-    return graz .* share
+    total_grazed_biomass = a * biomass_exp / (1u"kg / ha"^k_exp + a * h * biomass_exp)
+
+    @. calc.biomass_ρ = ρ * biomass
+    calc.grazed_share .= calc.biomass_ρ ./ sum(calc.biomass_ρ)
+
+    #### add grazed biomass to defoliation
+    @. calc.defoliation += calc.grazed_share * total_grazed_biomass
+
+    return nothing
 end
 
 @doc raw"""
-    trampling(; LD, biomass, LA, CH, trampling_factor)
+    trampling!(; calc, LD, biomass, height, trampling_factor)
 
 ```math
 \begin{align}
-ω &= \frac{\text{trampling_factor}}{CH^{0.25}} \\
+ω &= \frac{\text{trampling_factor}}{height^{0.25}} \\
 \text{trampled_biomass} &=
     \begin{cases}
         \text{biomass},
@@ -105,7 +112,7 @@ end
 \end{align}
 ```
 
-It is assumed that tall plants (trait: $CH$) are stronger affected by trampling.
+It is assumed that tall plants (trait: $height$) are stronger affected by trampling.
 A cosine function is used to model the influence of trampling.
 
 If the livestock density is higher than $ω$, all the biomass of that plant
@@ -114,32 +121,28 @@ species will be removed. This is unlikely to be the case.
 - biomass [$\frac{kg}{ha}$]
 - LD daily livestock density [$\frac{\text{livestock units}}{ha}$]
 - trampling_factor [$ha$]
-- CH canopy height [$m$]
+- height canopy height [$m$]
 
 ![Image of trampling effect](../../img/trampling.svg)
 """
-function trampling(; LD, biomass, CH, nspecies, trampling_factor)
-    if iszero(LD)
-        return zeros(nspecies)u"kg/(ha*d)"
-    end
-
-    ## higher values of the trampling factor
+function trampling!(; calc, LD, biomass, height, trampling_factor)
+    ## higher values of the trampling factor with unit: "m^0.25 / ha"
     ## --> less loss due to trampling
     ## values shouldn't be lower than 50,
     ## otherwise (larger) plants are too heavily influenced
-    ω = @. trampling_factor / ustrip(CH)^0.25 * u"1/ha"
-    trampled_biomass = @. biomass * 0.5 * (1 - cos(π * LD / ω))
+    @. calc.trampling_ω = trampling_factor / ustrip(height)^0.25 * u"1/ha"
+    @. calc.trampled_biomass = biomass * 0.5 * (1 - cos(π * LD / calc.trampling_ω))
 
-    if any(LD .> ω)
+    @. calc.trampling_high_LD = LD > calc.trampling_ω
+    if any(calc.trampling_high_LD)
         @warn """
               trampling removed all biomass of at least one plant species
               during one day:
               - lifestock density LD=$(round(ustrip(LD); digits=2))
               - trampling_factor=$(round(ustrip(trampling_factor); digits=2))
               """ maxlog=3
-        high_LD = LD .> ω
-        trampled_biomass[high_LD] .= biomass[high_LD]
+        calc.trampled_biomass[calc.trampling_high_LD] .= biomass[calc.trampling_high_LD]
     end
-
-    return trampled_biomass .* u"d^-1"
+    calc.defoliation .+= calc.trampled_biomass ./ u"d"
+    return nothing
 end

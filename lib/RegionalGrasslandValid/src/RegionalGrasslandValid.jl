@@ -6,6 +6,7 @@ using DataFrames, DataFramesMeta
 using Unitful
 using Distributions
 using LinearAlgebra
+using TimeSeries
 
 include("input_data.jl")
 include("validation_data.jl")
@@ -32,28 +33,37 @@ function load_data(datapath)
     evaporation = CSV.read("$datapath/validation/evaporation.csv",
         DataFrame)
 
-    satbiomass = CSV.read("$datapath/validation/sat_biomass.csv",
+    measuredbiomass = CSV.read("$datapath/validation/measured_biomass.csv",
         DataFrame)
 
-    measuredveg = CSV.read("$datapath/validation/measured_veg.csv",
+    mtraits = CSV.read("$datapath/validation/cwm_traits.csv",
         DataFrame)
+
+    traits = (vals = [mtraits.SLA mtraits.LNCM mtraits.AMC mtraits.SRSA_above mtraits.height],
+        dim = [:SLA, :LNCM, :AMC, :SRSA_above, :height],
+        t = mtraits.date,
+        num_t = mtraits.numeric_date,
+        plotID = mtraits.plotID)
 
     valid = (;
         soilmoisture,
         evaporation,
-        satbiomass,
-        measuredveg)
+        traits,
+        measuredbiomass)
 
     ########### input data
     initbiomass = CSV.read("$datapath/input/init_biomass.csv",
         DataFrame)
 
+    ## time dependent 2009-2022
     clim = CSV.read("$datapath/input/temperature_precipitation.csv",
         DataFrame)
 
+    ## time dependent 2006-2022
     pet = CSV.read("$datapath/input/PET.csv",
         DataFrame)
 
+    ## time dependent 2006-2022
     par = CSV.read("$datapath/input/par.csv",
         DataFrame)
 
@@ -61,12 +71,15 @@ function load_data(datapath)
     nut = CSV.read("$datapath/input/soilnutrients.csv",
         DataFrame)
 
+    ## constant WHC & PWP
     soil = CSV.read("$datapath/input/soilwater.csv",
         DataFrame)
 
+    ## time dependent 2006 - 2021
     mow = CSV.read("$datapath/input/mowing.csv",
         DataFrame)
 
+    ## time dependent 2006 - 2021
     graz = CSV.read("$datapath/input/grazing.csv",
         DataFrame)
 
@@ -90,17 +103,18 @@ end
 function get_plottingdata(sim::Module;
     inf_p,
     plotID,
+    nspecies,
     startyear,
-    endyear)
+    endyear,
+    seed)
 
     ########################## Run model
-    nyears = length(startyear:endyear)
     input_obj = validation_input(;
-        plotID, nyears, inf_p)
+        plotID, nspecies, startyear, endyear, inf_p, seed)
     sol = sim.solve_prob(; input_obj)
 
     ########################## Measured data
-    data = get_validation_data(; plotID)
+    data = get_validation_data(; plotID, startyear)
 
     return data, sol
 end

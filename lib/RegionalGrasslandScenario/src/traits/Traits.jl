@@ -52,7 +52,7 @@ function random_traits(n; back_transform = true)
         traitdf_names = [
             "LA_log", "LFM_log", "LDM_log",
             "BA_log", "SRSA_log", "AMC_logit",
-            "CH_log",
+            "height_log",
             "LDMPM_log", "LNCM_log",
         ]
         trait_names = first.(split.(traitdf_names, "_"))
