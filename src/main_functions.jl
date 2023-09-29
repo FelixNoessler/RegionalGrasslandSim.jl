@@ -1,7 +1,7 @@
 """
     one_day!(; calc, p, t)
 
-TBW
+Calculate the density differences of all state variables of one day.
 """
 function one_day!(; calc, p, t)
     LAItot = 0.0
@@ -115,7 +115,7 @@ end
 """
     initial_conditions(; initbiomass, npatches, nspecies)
 
-TBW
+Initialize all state variables with the same biomass and water content.
 """
 function initial_conditions(; initbiomass, npatches, nspecies)
     u_biomass = fill(initbiomass / nspecies,
@@ -129,7 +129,7 @@ end
 """
     initialize_parameters(; input_obj)
 
-TBW
+Initialize all parameters and store them in one object.
 """
 function initialize_parameters(; input_obj)
     #--------- calculate leaf senescence rate μ
@@ -201,7 +201,11 @@ end
 """
     solve_prob(; input_obj)
 
-TBW
+Solve the model for one site.
+
+Intialize the parameters, the state variables and the output vectors.
+In addition some vectors are preallocated to avoid allocations in the main loop.
+Then, run the main loop and store the results in the output vectors.
 """
 function solve_prob(; input_obj)
     p = initialize_parameters(; input_obj)
@@ -289,13 +293,13 @@ end
 """
     main_loop!(; calc, ts, p)
 
-TBW
+Run the main loop for all days.
 """
 function main_loop!(; calc, ts, p)
     for t in ts
         one_day!(; calc, p, t)
 
-        ### no allocations!
+        ### no allocations! :)
         calc.u_biomass .+= calc.du_biomass .* u"d"
         calc.u_water .+= calc.du_water .* u"d"
         calc.o_biomass[t, :, :] .= calc.u_biomass

@@ -67,7 +67,8 @@ vis.grazing_half_factor(; path = "$docs_img/grazing_half_factor.svg")
 vis.trampling(sim; path = "$docs_img/trampling.svg")
 
 # for prettyurls you need locally a live server
-makedocs(bib;
+makedocs(;
+    plugins=[bib],
     sitename = "RegionalGrasslandSim.jl",
     format = Documenter.HTML(prettyurls = true,
         mathengine = MathJax3()),

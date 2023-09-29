@@ -5,6 +5,9 @@ using Unitful
 using Distributions
 import Dates
 
+
+export solve_prob
+
 include("Growth/Growth.jl")
 include("Water/Water.jl")
 include("Functional response/FunctionalResponse.jl")

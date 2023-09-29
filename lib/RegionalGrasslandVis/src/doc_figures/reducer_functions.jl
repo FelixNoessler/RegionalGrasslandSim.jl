@@ -202,7 +202,7 @@ function seasonal_effect(sim;
 
     fig = Figure(; resolution = (700, 400))
     Axis(fig[1, 1];
-        ylabel = "Seasonal factor (SEA)",
+        ylabel = "Seasonal factor (seasonal)",
         xlabel = "Accumulated degree days (ST) [°C]",
         title = "Seasonal effect")
 
