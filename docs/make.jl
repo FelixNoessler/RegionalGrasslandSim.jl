@@ -7,6 +7,8 @@
 # include("docs/clean_local_doc.jl")
 
 using Documenter
+using RegionalGrasslandSim
+using RegionalGrasslandSim.Growth
 import RegionalGrasslandSim as sim
 import RegionalGrasslandVis as vis
 
