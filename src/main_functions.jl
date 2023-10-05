@@ -70,15 +70,13 @@ function one_day!(; calc, p, t)
             end
 
             # -------------- growth
-            ## no allocations
-            LAItot = Growth.growth(;
+            LAItot = Growth.growth!(;
                 t, p, calc,
                 biomass = patch_biomass,
                 WR = patch_water)
 
             # -------------- senescence
             if p.senescence_included
-                ## no allocations
                 Growth.senescence!(;
                     sen = calc.sen,
                     ST = p.daily_data.temperature_sum[t],
@@ -113,71 +111,64 @@ function one_day!(; calc, p, t)
 end
 
 """
-    initial_conditions(; initbiomass, npatches, nspecies)
-
-Initialize all state variables with the same biomass and water content.
-"""
-function initial_conditions(; initbiomass, npatches, nspecies)
-    u_biomass = fill(initbiomass / nspecies,
-        npatches,
-        nspecies)
-    u_water = fill(180.0, npatches)u"mm"
-
-    return u_biomass, u_water
-end
-
-"""
     initialize_parameters(; input_obj)
 
 Initialize all parameters and store them in one object.
 """
-function initialize_parameters(; input_obj)
+function initialize_parameters(; input_obj, inf_p)
+    #--------- create random traits
+    seed = 120
+    if !input_obj.constant_seed
+        seed = rand(1:100000)
+    end
+    traits, rel_traits = Traits.generate_random_traits(input_obj.nspecies; seed)
+
+    #--------- Distance matrix for below ground competition
+    trait_similarity = Traits.similarity_matrix(;
+        scaled_traits = hcat(rel_traits.SRSA_above, rel_traits.AMC),
+        belowtrait_similarity_exponent = inf_p.belowtrait_similarity_exponent)
+
     #--------- calculate leaf senescence rate μ
-    sla = ustrip.(uconvert.(u"cm^2 / g", input_obj.traits.SLA))
+    sla = ustrip.(uconvert.(u"cm^2 / g", traits.SLA))
     LL = 10 .^ ((log10.(sla) .- 2.41) ./ -0.38) .* 365.25 ./ 12 .* u"d"
-    sen_intercept = input_obj.inf_p.senescence_intercept / 1000
-    sen_rate = input_obj.inf_p.senescence_rate / 1000
+    sen_intercept = inf_p.senescence_intercept / 1000
+    sen_rate = inf_p.senescence_rate / 1000
     μ = sen_intercept * u"d^-1" .+ sen_rate ./ LL
 
     #--------- grazing parameter ρ [dimensionless]
-    ρ = input_obj.traits.LNCM .* u"g / mg"
+    ρ = traits.LNCM .* u"g / mg"
 
     #--------- functional response
     myco_nut_lower, myco_nut_upper, myco_nut_midpoint = FunctionalResponse.amc_nut_response(;
-        mycorrhizal_colon = input_obj.traits.AMC,
-        maximal_reduction = input_obj.inf_p.max_AMC_nut_reduction)
+        mycorrhizal_colon = traits.AMC,
+        maximal_reduction = inf_p.max_AMC_nut_reduction)
 
     srsa_water_lower, srsa_water_upper, srsa_midpoint = FunctionalResponse.srsa_response(;
-        SRSA_above = input_obj.traits.SRSA_above,
-        maximal_reduction = input_obj.inf_p.max_SRSA_water_reduction)
+        SRSA_above = traits.SRSA_above,
+        maximal_reduction = inf_p.max_SRSA_water_reduction)
 
     srsa_nut_lower, srsa_nut_upper, srsa_midpoint = FunctionalResponse.srsa_response(;
-        SRSA_above = input_obj.traits.SRSA_above,
-        maximal_reduction = input_obj.inf_p.max_SRSA_nut_reduction)
+        SRSA_above = traits.SRSA_above,
+        maximal_reduction = inf_p.max_SRSA_nut_reduction)
 
     sla_water_lower, sla_water_midpoint = FunctionalResponse.sla_water_response(;
-        SLA = input_obj.traits.SLA,
-        maximal_reduction = input_obj.inf_p.max_SLA_water_reduction)
-
-    #--------- Distance matrix for below ground competition
-    rel_t = input_obj.relative_traits
-    trait_similarity = Growth.similarity_matrix(;
-        scaled_traits = hcat(rel_t.SLA, rel_t.SRSA_above, rel_t.AMC))
+        SLA = traits.SLA,
+        maximal_reduction = inf_p.max_SLA_water_reduction)
 
     #--------- store everything in one object
     p = (;
         npatches = input_obj.npatches,
         nspecies = input_obj.nspecies,
         species = (;
-            SLA = input_obj.traits.SLA,
+            SLA = traits.SLA,
             μ,
             ρ,
             LL,
-            AMC = input_obj.traits.AMC,
-            SRSA_above = input_obj.traits.SRSA_above,
-            LA = input_obj.traits.LA,
-            height = input_obj.traits.height,
-            LNCM = input_obj.traits.LNCM,
+            AMC = traits.AMC,
+            SRSA_above = traits.SRSA_above,
+            LA = traits.LA,
+            height = traits.height,
+            LNCM = traits.LNCM,
             fun_response = (;
                 myco_nut_lower,
                 myco_nut_upper,
@@ -189,7 +180,7 @@ function initialize_parameters(; input_obj)
                 srsa_midpoint,
                 sla_water_lower,
                 sla_water_midpoint)),
-        inf_p = input_obj.inf_p,
+        inf_p,
         site = input_obj.site,
         trait_similarity,
         daily_data = input_obj.daily_data,
@@ -198,8 +189,80 @@ function initialize_parameters(; input_obj)
     return p
 end
 
+function reset_initialconditions!(; calc, input_obj)
+    calc.u_biomass .= input_obj.site.initbiomass / input_obj.nspecies
+    calc.u_water .= 180.0u"mm"
+end
+
+function preallocate_vectors(; input_obj)
+    n = length(input_obj.daily_data.date)
+
+    calc = (;
+        ############ vectors that store the state variables
+        u_biomass = fill(input_obj.site.initbiomass / input_obj.nspecies,
+            input_obj.npatches,
+            input_obj.nspecies),
+        u_water = fill(180.0, input_obj.npatches)u"mm",
+
+        ############ vectors that store the change of the state variables
+        du_biomass = zeros(input_obj.npatches, input_obj.nspecies)u"kg / (ha * d)",
+        du_water = zeros(input_obj.npatches)u"mm / d",
+
+        ############ output vectors of the state variables
+        o_biomass = fill(NaN, n, input_obj.npatches, input_obj.nspecies)u"kg/ha",
+        o_water = fill(NaN, n, input_obj.npatches)u"mm",
+
+        ############ preallaocated vectors that are used in the calculations
+        pot_growth = fill(NaN, input_obj.nspecies)u"kg / (ha * d)",
+        act_growth = fill(NaN, input_obj.nspecies)u"kg / (ha * d)",
+        defoliation = fill(NaN, input_obj.nspecies)u"kg / (ha * d)",
+        sen = zeros(input_obj.nspecies)u"kg / (ha * d)",
+        species_specific_red = fill(NaN, input_obj.nspecies),
+        LAIs = fill(NaN, input_obj.nspecies),
+
+        ## warnings, debugging, avoid numerical errors
+        very_low_biomass = fill(false, input_obj.nspecies),
+        nan_biomass = fill(false, input_obj.nspecies),
+        neg_act_growth = fill(false, input_obj.nspecies),
+
+        ## below ground competition
+        below_split = fill(NaN, input_obj.nspecies),
+        traitsimilarity_biomass = fill(NaN, input_obj.nspecies),
+
+        ## height influence
+        heightinfluence = fill(NaN, input_obj.nspecies),
+        biomass_height = fill(NaN, input_obj.nspecies)u"m * kg / ha",
+
+        ## nutrient reducer function
+        nutrients_splitted = fill(NaN, input_obj.nspecies),
+        Nutred = fill(NaN, input_obj.nspecies),
+        amc_nut = fill(NaN, input_obj.nspecies),
+        srsa_nut = fill(NaN, input_obj.nspecies),
+
+        ## water reducer function
+        water_splitted = fill(NaN, input_obj.nspecies),
+        Waterred = fill(NaN, input_obj.nspecies),
+        sla_water = fill(NaN, input_obj.nspecies),
+        srsa_water = fill(NaN, input_obj.nspecies),
+
+        ## mowing
+        mown_height = fill(NaN, input_obj.nspecies)u"m",
+        mowing_λ = fill(NaN, input_obj.nspecies),
+
+        ## grazing
+        biomass_ρ = fill(NaN, input_obj.nspecies)u"kg / ha",
+        grazed_share = fill(NaN, input_obj.nspecies),
+
+        ## trampling
+        trampling_ω = fill(NaN, input_obj.nspecies)u"1/ha",
+        trampled_biomass = fill(NaN, input_obj.nspecies)u"kg / ha",
+        trampling_high_LD = fill(false, input_obj.nspecies))
+
+    return calc
+end
+
 """
-    solve_prob(; input_obj)
+    solve_prob(; input_obj, inf_p, calc = nothing)
 
 Solve the model for one site.
 
@@ -207,76 +270,16 @@ Intialize the parameters, the state variables and the output vectors.
 In addition some vectors are preallocated to avoid allocations in the main loop.
 Then, run the main loop and store the results in the output vectors.
 """
-function solve_prob(; input_obj)
-    p = initialize_parameters(; input_obj)
+function solve_prob(; input_obj, inf_p, calc = nothing)
+    p = initialize_parameters(; input_obj, inf_p)
 
-    dates = p.daily_data.date
-    n = length(dates)
-    ts = 1:n
+    if isnothing(calc)
+        calc = preallocate_vectors(; input_obj)
+    else
+        reset_initialconditions!(; calc, input_obj)
+    end
 
-    #### initial conditions of the state variables
-    u_biomass, u_water = initial_conditions(;
-        nspecies = p.nspecies,
-        npatches = p.npatches,
-        initbiomass = p.site.initbiomass)
-
-    calc = (;
-        ############ vectors that store the state variables
-        u_biomass,
-        u_water,
-
-        ############ vectors that store the change of the state variables
-        du_biomass = zeros(p.npatches, p.nspecies)u"kg / (ha * d)",
-        du_water = zeros(p.npatches)u"mm / d",
-
-        ############ output vectors of the state variables
-        o_biomass = fill(NaN, n, p.npatches, p.nspecies)u"kg/ha",
-        o_water = fill(NaN, n, p.npatches)u"mm",
-
-        ############ preallaocated vectors that are used in the calculations
-        pot_growth = fill(NaN, p.nspecies)u"kg / (ha * d)",
-        act_growth = fill(NaN, p.nspecies)u"kg / (ha * d)",
-        defoliation = fill(NaN, p.nspecies)u"kg / (ha * d)",
-        sen = zeros(p.nspecies)u"kg / (ha * d)",
-        species_specific_red = fill(NaN, p.nspecies),
-        LAIs = fill(NaN, p.nspecies),
-
-        ## warnings, debugging, avoid numerical errors
-        very_low_biomass = fill(false, p.nspecies),
-        nan_biomass = fill(false, p.nspecies),
-        neg_act_growth = fill(false, p.nspecies),
-
-        ## below ground competition
-        below = fill(NaN, p.nspecies),
-        traitsimilarity_biomass = fill(NaN, p.nspecies),
-
-        ## height influence
-        heightinfluence = fill(NaN, p.nspecies),
-        biomass_height = fill(NaN, p.nspecies)u"m * kg / ha",
-
-        ## nutrient reducer function
-        Nutred = fill(NaN, p.nspecies),
-        amc_nut = fill(NaN, p.nspecies),
-        srsa_nut = fill(NaN, p.nspecies),
-
-        ## water reducer function
-        Waterred = fill(NaN, p.nspecies),
-        sla_water = fill(NaN, p.nspecies),
-        srsa_water = fill(NaN, p.nspecies),
-
-        ## mowing
-        mown_height = fill(NaN, p.nspecies)u"m",
-        mowing_λ = fill(NaN, p.nspecies),
-
-        ## grazing
-        biomass_ρ = fill(NaN, p.nspecies)u"kg / ha",
-        grazed_share = fill(NaN, p.nspecies),
-
-        ## trampling
-        trampling_ω = fill(NaN, p.nspecies)u"1/ha",
-        trampled_biomass = fill(NaN, p.nspecies)u"kg / ha",
-        trampling_high_LD = fill(false, p.nspecies))
-
+    ts = 1:length(p.daily_data.date)
     main_loop!(; calc, ts, p)
 
     calc.o_biomass[calc.o_biomass .< 0u"kg / ha"] .= 0u"kg / ha"
@@ -285,8 +288,8 @@ function solve_prob(; input_obj)
         biomass = calc.o_biomass,
         water = calc.o_water,
         t = ts,
-        date = dates,
-        numeric_date = to_numeric.(dates),
+        date = p.daily_data.date,
+        numeric_date = to_numeric.(p.daily_data.date),
         p = p)
 end
 

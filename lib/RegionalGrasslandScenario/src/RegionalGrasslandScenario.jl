@@ -9,7 +9,6 @@ include("climate_analysis/PAR.jl")
 include("climate_analysis/Precipitation.jl")
 include("climate_analysis/PET.jl")
 include("landuse/Landuse.jl")
-include("traits/Traits.jl")
 
 export scenario_input
 
@@ -21,13 +20,11 @@ function __init__()
     PAR.load_data(datapath)
     Precipitation.load_data(datapath)
     PET.load_data(datapath)
-    Traits.load_data(datapath)
 
     return nothing
 end
 
 function scenario_input(;
-    inf_p,
     nyears,
     nspecies,
     explo,
@@ -39,6 +36,7 @@ function scenario_input(;
     WHC,
     PWP,
     npatches = 1,
+    constant_seed = false,
     initbiomass = 500u"kg/ha",
     senescence_included = true,
     potgrowth_included = true,
@@ -63,8 +61,6 @@ function scenario_input(;
     evapo_data = PET.predict_pet(;
         explo,
         nyears)
-    trait_data = Traits.random_traits(nspecies;)
-    relative_trait_data = Traits.relative_traits(; trait_data)
     grazing_data = Landuse.grazing_input(;
         grazing_start,
         grazing_end,
@@ -103,9 +99,9 @@ function scenario_input(;
         season_red,
         radiation_red)
 
-    return (inf_p,
-        nspecies,
+    return (nspecies,
         npatches,
+        constant_seed,
         included,
         startyear = 0,
         endyear = nyears,
@@ -114,9 +110,6 @@ function scenario_input(;
             WHC = WHC * u"mm",
             PWP = PWP * u"mm",
             initbiomass),
-        traits = (; zip(Symbol.(names(trait_data)), eachcol(trait_data))...),
-        relative_traits = (;
-            zip(Symbol.(names(relative_trait_data)), eachcol(relative_trait_data))...),
         daily_data)
 end
 

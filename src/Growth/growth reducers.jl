@@ -1,7 +1,8 @@
 @doc raw"""
     radiation_reduction(; PAR, radiation_red)
 
-Reduction of radiation use efficiency at light intensities higher than 5 ``MJ\cdot m^{-2}\cdot d^{-1}``
+Reduction of radiation use efficiency at light intensities higher
+than 5 ``MJ\cdot m^{-2}\cdot d^{-1}``
 
 ```math
 \text{Rred} = \text{min}(1, 1-\gamma_1(\text{PAR}(t) - \gamma_2))
@@ -14,7 +15,9 @@ The equations and the parameter values are taken from [Schapendonk1998](@cite).
 - `γ₂` is the threshold value of PAR from which starts a linear decrease in RUE,
   here set to 5 [MJ m⁻² d⁻¹]
 
-comment to the equation/figure: PAR values are usually between 0 and 15 ``MJ\cdot m^{-2}\cdot d^{-1}`` and therefore negative values of Rred are very unlikely
+comment to the equation/figure: PAR values are usually between 0 and
+15 ``MJ\cdot m^{-2}\cdot d^{-1}`` and therefore negative values of
+Rred are very unlikely
 ![Image of the radiation reducer function](../../img/radiation_reducer.svg)
 """
 function radiation_reduction(; PAR, radiation_red)
@@ -46,7 +49,9 @@ with a step function.
     \end{cases}
 ```
 
-Equations are taken from [Moulin2021](@cite) and theses are based on [Schapendonk1998](@cite). `T₁` is in [Moulin2021](@cite) a species specific parameter, but here it is set to 12°C for all species.
+Equations are taken from [Moulin2021](@cite) and theses are based on
+[Schapendonk1998](@cite). `T₁` is in [Moulin2021](@cite) a
+species specific parameter, but here it is set to 12°C for all species.
 
 - `T₀` is the lower temperature threshold for growth, here set to 3°C
 - `T₁` is the lower bound for the optimal temperature for growth, here set to 12°C
@@ -83,9 +88,7 @@ end
 
 """
     water_reduction!(;
-        Waterred,
-        sla_water,
-        srsa_water,
+        calc,
         fun_response,
         WR,
         water_red,
@@ -96,9 +99,7 @@ end
 See for details: [Water stress](@ref water_stress)
 """
 function water_reduction!(;
-    Waterred,
-    sla_water,
-    srsa_water,
+    calc,
     fun_response,
     WR,
     water_red,
@@ -121,12 +122,14 @@ function water_reduction!(;
     β₂ = 7.623e-8
     exp_fun = -(β₂ * PET / PETₘₐₓ + (1 - PET / PETₘₐₓ) * β₁)
     x = (1 - exp(exp_fun * W)) / (1 - exp(exp_fun))
-
+    @. calc.water_splitted = x * calc.below_split
     ### ------------ species specific functional response
-    sla_water_reduction!(; sla_water, fun_response, x)
-    srsa_water_reduction!(; srsa_water, fun_response, x)
+    sla_water_reduction!(;
+        sla_water = calc.sla_water, fun_response, x = calc.water_splitted)
+    srsa_water_reduction!(;
+        srsa_water = calc.srsa_water, fun_response, x = calc.water_splitted)
 
-    @. Waterred = sla_water * srsa_water
+    @. calc.Waterred = calc.sla_water * calc.srsa_water
 
     return nothing
 end
@@ -155,7 +158,8 @@ end
 """
     srsa_water_reduction!(; srsa_water, fun_response, x)
 
-Reduction of growth due to stronger water stress for lower specific root surface area per above ground biomass (`SRSA_above`).
+Reduction of growth due to stronger water stress for lower specific
+root surface area per above ground biomass (`SRSA_above`).
 """
 function srsa_water_reduction!(; srsa_water, fun_response, x)
     k_SRSA = 7
@@ -168,9 +172,7 @@ end
 
 """
     nutrient_reduction!(;
-        Nutred,
-        amc_nut,
-        srsa_nut,
+        calc,
         fun_response,
         nutrient_red,
         nutrients)
@@ -178,9 +180,7 @@ end
 See for details: [Nutrient stress](@ref nut_stress)
 """
 function nutrient_reduction!(;
-    Nutred,
-    amc_nut,
-    srsa_nut,
+    calc,
     fun_response,
     nutrient_red,
     nutrients)
@@ -189,11 +189,15 @@ function nutrient_reduction!(;
         return 1.0
     end
 
-    ### ------------ species specific functional response
-    amc_nut_reduction!(; amc_nut, fun_response, x = nutrients)
-    srsa_nut_reduction!(; srsa_nut, fun_response, x = nutrients)
+    @. calc.nutrients_splitted = calc.below_split * nutrients
 
-    @. Nutred = max(amc_nut, srsa_nut)
+    ### ------------ species specific functional response
+    amc_nut_reduction!(;
+        amc_nut = calc.amc_nut, fun_response, x = calc.nutrients_splitted)
+    srsa_nut_reduction!(;
+        srsa_nut = calc.srsa_nut, fun_response, x = calc.nutrients_splitted)
+
+    @. calc.Nutred = max(calc.amc_nut, calc.srsa_nut)
 
     return nothing
 end
@@ -201,7 +205,8 @@ end
 """
     amc_nut_reduction!(; amc_nut, fun_response, x)
 
-Reduction of growth due to stronger nutrient stress for lower arbuscular mycorrhizal colonization (`AMC`).
+Reduction of growth due to stronger nutrient stress for lower
+arbuscular mycorrhizal colonization (`AMC`).
 """
 function amc_nut_reduction!(; amc_nut, fun_response, x)
     k_AMC = 7
@@ -215,7 +220,8 @@ end
 """
     srsa_nut_reduction!(; srsa_nut, fun_response, x)
 
-Reduction of growth due to stronger nutrient stress for lower specific root surface area per above ground biomass (`SRSA_above`).
+Reduction of growth due to stronger nutrient stress for lower specific
+root surface area per above ground biomass (`SRSA_above`).
 """
 function srsa_nut_reduction!(; srsa_nut, fun_response, x)
     k_SRSA = 7
@@ -236,9 +242,11 @@ the yearly cumulative sum of the daily mean temperatures (`ST`).
 \text{seasonal}(ST) =
     \begin{cases}
     SEA_{min} & \text{if } ST < 200 \\
-    SEAₘᵢₙ + (SEAₘₐₓ - SEAₘᵢₙ) * \frac{ST - 200}{ST₁ - 400} & \text{if } 200 < ST < ST₁ - 200 \\
+    SEAₘᵢₙ + (SEAₘₐₓ - SEAₘᵢₙ) * \frac{ST - 200}{ST₁ - 400} &
+        \text{if } 200 < ST < ST₁ - 200 \\
     SEA_{max} & \text{if } ST₁ - 200 < ST < ST₁ - 100 \\
-    SEAₘᵢₙ + (SEAₘᵢₙ - SEAₘₐₓ) * \frac{ST - ST₂}{ST₂ - ST₁ - 100}& \text{if } ST₁ - 100 < ST < ST₂ \\
+    SEAₘᵢₙ + (SEAₘᵢₙ - SEAₘₐₓ) * \frac{ST - ST₂}{ST₂ - ST₁ - 100} &
+        \text{if } ST₁ - 100 < ST < ST₂ \\
     SEA_{min} & \text{if } ST > ST₂ \\
     \end{cases}
 ```

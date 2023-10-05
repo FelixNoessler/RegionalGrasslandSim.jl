@@ -1,9 +1,17 @@
+function get_validation_data_plots(; plotIDs, startyear)
+    valid_data = Dict()
+
+    for plotID in plotIDs
+        valid_data[plotID] = get_validation_data(; plotID, startyear)
+    end
+
+    return valid_data
+end
+
 function get_validation_data(; plotID, startyear)
     measuredbiomass_sub = @subset data.valid.measuredbiomass :plotID .==
-                                                             plotID.&&Dates.year.(:date) .<=
-                                                                      2021
-    # trait_sub = @subset data.valid.measuredtraits :plotID.==plotID
-
+                                                             plotID.&&
+    Dates.year.(:date) .<= 2021
     measured_biomass = TimeArray((;
             biomass = measuredbiomass_sub.biomass,
             numeric_date = to_numeric.(measuredbiomass_sub.date),

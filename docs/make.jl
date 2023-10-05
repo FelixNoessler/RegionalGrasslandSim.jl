@@ -7,7 +7,6 @@
 # include("docs/clean_local_doc.jl")
 
 using Documenter
-import RegionalGrasslandSim
 import RegionalGrasslandSim as sim
 import RegionalGrasslandVis as vis
 
@@ -68,13 +67,14 @@ vis.trampling(sim; path = "$docs_img/trampling.svg")
 
 # for prettyurls you need locally a live server
 makedocs(;
-    plugins=[bib],
+    plugins = [bib],
     sitename = "RegionalGrasslandSim.jl",
     format = Documenter.HTML(prettyurls = true,
         mathengine = MathJax3()),
     modules = [RegionalGrasslandSim],
     pages = Any["Home" => "index.md",
         "Modelling API" => Any["Difference equation" => "Modelling_API/Difference_equation/index.md",
+            "Traits" => "Modelling_API/Traits/index.md",
             "Growth" => "Modelling_API/Growth/index.md",
             "Water dynamics" => "Modelling_API/Water_dynamics/index.md",
             "Functional response" => "Modelling_API/Functional_response/index.md"],

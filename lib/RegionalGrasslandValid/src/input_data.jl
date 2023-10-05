@@ -1,8 +1,7 @@
-function validation_input(;
-    plotID,
+function validation_input_plots(;
+    plotIDs,
     nspecies,
     startyear, endyear,
-    inf_p,
     npatches = 1,
     senescence_included = true,
     potgrowth_included = true,
@@ -16,7 +15,51 @@ function validation_input(;
     season_red = true,
     radiation_red = true,
     constant_init_biomass = true,
-    seed = rand(1:100000))
+    constant_seed = false)
+    static_inputs = Dict()
+
+    for plotID in plotIDs
+        static_inputs[plotID] = validation_input(;
+            plotID,
+            nspecies,
+            startyear, endyear,
+            npatches,
+            senescence_included,
+            potgrowth_included,
+            mowing_included,
+            grazing_included,
+            below_included,
+            height_included,
+            water_red,
+            nutrient_red,
+            temperature_red,
+            season_red,
+            radiation_red,
+            constant_init_biomass,
+            constant_seed)
+    end
+
+    return static_inputs
+end
+
+function validation_input(;
+    plotID,
+    nspecies,
+    startyear, endyear,
+    npatches = 1,
+    senescence_included = true,
+    potgrowth_included = true,
+    mowing_included = true,
+    grazing_included = true,
+    below_included = true,
+    height_included = true,
+    water_red = true,
+    nutrient_red = true,
+    temperature_red = true,
+    season_red = true,
+    radiation_red = true,
+    constant_init_biomass = true,
+    constant_seed = false)
     yearrange = Ref(startyear:endyear)
 
     ###### daily data
@@ -58,6 +101,8 @@ function validation_input(;
     ### ----------------- abiotic
     nut_sub = @subset data.input.nut :plotID.==plotID
     nutrient_index = nut_sub.n_index[1]
+    total_N = nut_sub.Total_N[1]
+    CN_ratio = nut_sub.CN_ratio[1]
 
     soil_sub = @subset data.input.soil :plotID.==plotID
     WHC = soil_sub.WHC[1] * u"mm"
@@ -68,9 +113,6 @@ function validation_input(;
     organic = soil_sub.organic[1]
     bulk = soil_sub.bulk[1]
     root_depth = soil_sub.root_depth[1]
-
-    ### ----------------- traits
-    traits, relative_traits = Traits.create_traits(nspecies; seed)
 
     #### -------------- whether parts of the simulation are included
     included = (;
@@ -86,8 +128,7 @@ function validation_input(;
         season_red,
         radiation_red)
 
-    return (inf_p,
-        nspecies,
+    return (nspecies,
         npatches,
         included,
         startyear,
@@ -95,6 +136,8 @@ function validation_input(;
         site = (;
             initbiomass,
             nutrient_index,
+            total_N,
+            CN_ratio,
             WHC,
             PWP,
             Clay,
@@ -103,9 +146,8 @@ function validation_input(;
             organic,
             bulk,
             root_depth),
-        traits,
-        relative_traits,
-        daily_data)
+        daily_data,
+        constant_seed)
 end
 
 function yearly_temp_cumsum(d::DataFrame)

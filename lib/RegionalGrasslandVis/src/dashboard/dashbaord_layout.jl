@@ -1,4 +1,4 @@
-function dashboard_layout(; inf_p_start)
+function dashboard_layout(; valid)
     fig = Figure(; resolution = (1700, 950))
 
     top_menu = fig[1, 1:2] = GridLayout()
@@ -250,31 +250,18 @@ function dashboard_layout(; inf_p_start)
         tellwidth = false, halign = :left)
 
     ############# Parameter values
-
-    ####### Bounds
-    #         mc_α mc_β s_i s_r below tram graz mow SRSA SLA  AMC  SRSA_n
-    lb_prep = [0, 0, 0, 0, 0, 100, 0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    ub_prep = [80, 300, 10, 10, 1, 300, 2000, 50, 1.0, 1.0, 1.0, 1.0]
-    nscale_params = 7
-    lb_b = zeros(nscale_params)
-    ub_b = fill(5e3, nscale_params)
-    lb = vcat(lb_prep, lb_b)
-    ub = vcat(ub_prep, ub_b)
-    #######
-    vals = values(inf_p_start)
-    parameter_names = keys(inf_p_start)
-
+    mp = valid.model_parameters()
     param_slider_prep = [(label = string(name),
         range = p1:0.001:p2,
         format = "{:.3f}",
         height = 15,
         linewidth = 15,
         tellheight = true,
-        startvalue = val) for (name, val, p1, p2) in zip(parameter_names, vals, lb, ub)]
+        startvalue = val) for (name, val, p1, p2) in zip(mp.names, mp.best, mp.lb, mp.ub)]
     sliders_param = SliderGrid(param_layout[3, 1],
         height = 400,
         param_slider_prep...;)
-    [rowgap!(sliders_param.layout, i, 0) for i in 1:(length(vals) - 1)]
+    [rowgap!(sliders_param.layout, i, 0) for i in 1:(length(mp.names) - 1)]
 
     #############
     axes = [Axis(plots_layout[i, u];
@@ -323,7 +310,6 @@ function dashboard_layout(; inf_p_start)
 
     return (; axes, obs)
 end
-
 
 function test_date(x)
     return isnothing(tryparse(Dates.Date, x, Dates.dateformat"mm-dd")) ? false : true

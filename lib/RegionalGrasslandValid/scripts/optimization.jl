@@ -1,39 +1,48 @@
 # include("../lib/RegionalGrasslandValid/scripts/optimization.jl")
 
 using Metaheuristics
-using RegionalGrasslandValid
+import RegionalGrasslandValid as valid
 import StatsBase
 import RegionalGrasslandSim as sim
+# import Polyester
 
 function run_optimization(;
     f_calls_limit = Inf,
     time_limit = Inf,
     iterations = 10,
     explos = ["HEG", "AEG", "SEG"])
-    param_names = [
-        "moistureconv_alpha", "moistureconv_beta",
-        "senescence_intercept", "senescence_rate",
-        "below_competition_strength", "trampling_factor", "grazing_half_factor",
-        "mowing_mid_days", "max_SRSA_water_reduction", "max_SLA_water_reduction",
-        "max_AMC_nut_reduction", "max_SRSA_nut_reduction",
-        "b_biomass",
-        "b_SLA", "b_LNCM", "b_AMC", "b_height", "b_SRSA_above",
-        "b_soilmoisture"]
+    mp = valid.model_parameters()
+    param_names = mp.names
 
     training_plots = ["$(explo)$(lpad(i, 2, "0"))" for i in 1:9 for explo in explos]
 
+    input_objs = valid.validation_input_plots(;
+        plotIDs = training_plots,
+        nspecies = 25,
+        startyear = 2009,
+        endyear = 2021,
+        npatches = 1)
+    valid_data = valid.get_validation_data_plots(;
+        plotIDs = training_plots,
+        startyear = 2009)
+    preallocated = [sim.preallocate_vectors(; input_obj) for t in 1:Threads.nthreads()]
+
     function ll_batch(X)
         # selected_plots = StatsBase.sample(training_plots, batch_size; replace = false)
-        selected_plots = training_plots
+        # selected_plots = training_plots
         N = size(X, 1)
-        ll_mat = Array{Float64}(undef, N, length(selected_plots))
+        ll_mat = Array{Float64}(undef, N, length(training_plots))
 
         Threads.@threads for i in 1:N
+            # for i in 1:N
+            # Polyester.@batch per=thread for i in 1:N
             inf_p = (; zip(Symbol.(param_names), X[i, :])...)
 
-            for (p, plotID) in enumerate(selected_plots)
-                ll_mat[i, p] = loglikelihood_model(sim;
-                    nspecies = 25,
+            for (p, plotID) in enumerate(training_plots)
+                ll_mat[i, p] = valid.loglikelihood_model(sim;
+                    input_objs,
+                    valid_data,
+                    calc = preallocated[Threads.threadid()],
                     plotID,
                     inf_p,
                     pretty_print = false)
@@ -41,22 +50,12 @@ function run_optimization(;
         end
 
         ### free RAM space
-        GC.gc()
+        # GC.gc()
 
         return vec(sum(abs.(ll_mat); dims = 2))
     end
 
-    #         mc_α mc_β s_i s_r below tram graz mow SRSA SLA  AMC  SRSA_n
-    lb_prep = [0, 0, 0, 0, 0, 100, 0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    ub_prep = [80, 300, 10, 10, 1, 300, 2000, 50, 1.0, 1.0, 1.0, 1.0]
-
-    nscale_params = 7
-    lb_b = zeros(nscale_params)
-    ub_b = fill(5e3, nscale_params)
-    lb = vcat(lb_prep, lb_b)
-    ub = vcat(ub_prep, ub_b)
-
-    bounds = boxconstraints(; lb, ub)
+    bounds = boxconstraints(; lb = mp.lb, ub = mp.ub)
 
     options = Options(;
         f_calls_limit,
@@ -67,7 +66,7 @@ function run_optimization(;
         parallel_evaluation = true)
 
     live_plot(st) = begin
-        @show vals = st.best_sol.x
+        @show st.best_sol.x
     end
 
     ## DE or ECA
@@ -80,7 +79,7 @@ function run_optimization(;
 end
 
 optim_result = run_optimization(;
-    iterations = 10)
+    iterations = 5)
 
 # let
 #     f_calls, best_f_value = convergence(optim_result)

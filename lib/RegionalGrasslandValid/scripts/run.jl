@@ -17,49 +17,45 @@ using RegionalGrasslandValid
 # format(joinpath(dirname(pathof(RegionalGrasslandSim)), ".."))
 
 #############################
-param_names = [
-    "moistureconv_alpha", "moistureconv_beta",
-    "senescence_intercept", "senescence_rate",
-    "below_competition_strength", "trampling_factor", "grazing_half_factor",
-    "mowing_mid_days", "max_SRSA_water_reduction", "max_SLA_water_reduction",
-    "max_AMC_nut_reduction", "max_SRSA_nut_reduction",
-    "b_biomass",
-    "b_SLA", "b_LNCM", "b_AMC", "b_height", "b_SRSA_above",
-    "b_soilmoisture"];
-vals = [
-    28.428282890792907, 72.70570950774605, 4.999073781961289, 4.153059795872836,
-    0.3931281548093227, 267.95272883632566, 1874.387202377206, 10.23688734649984,
-    0.44395619127597463, 0.2388901001112616, 0.36320671631375023, 0.5711510823547715,
-    1628.6040232644204, 2145.2018690252116, 1021.0380327120577, 8.80738136284001,
-    260.21386563130073, 2129.699173441751, 87.03525031931032]
-inf_p = (; zip(Symbol.(param_names), vals)...)
+mp = valid.model_parameters();
+inf_p = (; zip(Symbol.(mp.names), mp.best)...);
 input_obj = valid.validation_input(;
     plotID = "HEG01", nspecies = 25,
     startyear = 2009, endyear = 2021,
-    inf_p, npatches = 1);
-@time sol = sim.solve_prob(; input_obj);
-
-# @time data, sol = get_plottingdata(sim;
-#     plotID,
-#     inf_p,
-#     nspecies = 25,
-#     startyear = 2009,
-#     endyear = 2021,
-#     seed = rand(1:100));
+    npatches = 1);
+calc = sim.preallocate_vectors(; input_obj);
+@time sol = sim.solve_prob(; input_obj, inf_p, calc);
+# @profview_allocs sim.solve_prob(; input_obj, inf_p, calc) sample_rate = 1.0
 
 training_plots = ["$(explo)$(lpad(i, 2, "0"))" for i in 1:9
                   for explo in ["HEG", "SEG", "AEG"]]
-
-sum([loglikelihood_model(sim;
+input_objs = valid.validation_input_plots(;
+    plotIDs = training_plots,
+    nspecies = 25,
+    startyear = 2009,
+    endyear = 2021,
+    npatches = 1);
+valid_data = valid.get_validation_data_plots(;
+    plotIDs = training_plots,
+    startyear = 2009);
+@time loglikelihood_model(sim;
+    input_objs,
+    valid_data,
+    calc,
     inf_p,
-    plotID = p,
-    nspecies = 30) for p in training_plots])
+    plotID = "HEG01");
+@time sum([loglikelihood_model(sim;
+    input_objs,
+    valid_data,
+    calc,
+    inf_p,
+    plotID = p) for p in training_plots]);
 
 ############################# Dashboard
 using GLMakie
 GLMakie.activate!()
 Makie.inline!(false)
-vis.dashboard(; sim, valid, scen, inf_p_start = inf_p)
+vis.dashboard(; sim, valid, scen)
 
 ############################# Validation
 using CairoMakie

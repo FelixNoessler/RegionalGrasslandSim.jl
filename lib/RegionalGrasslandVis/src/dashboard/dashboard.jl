@@ -1,5 +1,5 @@
-function dashboard(; sim::Module, valid::Module, scen::Module, inf_p_start)
-    plot_obj = dashboard_layout(; inf_p_start)
+function dashboard(; sim::Module, valid::Module, scen::Module)
+    plot_obj = dashboard_layout(; valid)
 
     still_running = false
     sol = nothing
@@ -10,8 +10,8 @@ function dashboard(; sim::Module, valid::Module, scen::Module, inf_p_start)
         if !still_running
             still_running = true
 
-            input_obj = prepare_input(; plot_obj, inf_p_start, valid, scen)
-            sol = sim.solve_prob(; input_obj)
+            inf_p, input_obj = prepare_input(; plot_obj, valid, scen)
+            sol = sim.solve_prob(; input_obj, inf_p)
             valid_data = get_valid_data(;
                 plot_obj, startyear = Dates.year(sol.date[1]), valid)
             update_plots(; sol, plot_obj, valid_data)
@@ -21,17 +21,19 @@ function dashboard(; sim::Module, valid::Module, scen::Module, inf_p_start)
             set_close_to!(plot_obj.obs.slider_time, sol.t[end])
             updating_slider = false
 
-            ll_obj = valid.loglikelihood_model(sim;
-                inf_p = input_obj.inf_p,
-                plotID = plot_obj.obs.menu_plotID.selection.val,
-                nspecies = input_obj.nspecies,
-                data = valid_data,
-                sol = sol,
-                return_seperate = true)
+            use_simulated_data = !plot_obj.obs.toggle_plotID.active.val
+            if !use_simulated_data
+                ll_obj = valid.loglikelihood_model(sim;
+                    inf_p,
+                    plotID = plot_obj.obs.menu_plotID.selection.val,
+                    data = valid_data,
+                    sol = sol,
+                    return_seperate = true)
 
-            plot_obj.obs.lls.biomass[] = ll_obj.biomass
-            plot_obj.obs.lls.traits[] = ll_obj.trait
-            plot_obj.obs.lls.soilmoisture[] = ll_obj.soilmoisture
+                plot_obj.obs.lls.biomass[] = ll_obj.biomass
+                plot_obj.obs.lls.traits[] = ll_obj.trait
+                plot_obj.obs.lls.soilmoisture[] = ll_obj.soilmoisture
+            end
 
             still_running = false
         end
@@ -84,6 +86,8 @@ function dashboard(; sim::Module, valid::Module, scen::Module, inf_p_start)
             updating_slider = false
         end
     end
+
+    return nothing
 end
 
 function get_valid_data(; plot_obj, startyear, valid)

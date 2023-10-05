@@ -1,7 +1,7 @@
-function prepare_input(; plot_obj, inf_p_start, valid, scen)
+function prepare_input(; plot_obj, valid, scen)
     # ------------- parameter values
     parameter_vals = [s.value.val for s in plot_obj.obs.sliders_param.sliders]
-    parameter_names = keys(inf_p_start)
+    parameter_names = valid.model_parameters().names
     inf_p = (; zip(Symbol.(parameter_names), parameter_vals)...)
 
     # ------------- whether parts of the simulation are included
@@ -20,20 +20,19 @@ function prepare_input(; plot_obj, inf_p_start, valid, scen)
 
     use_simulated_data = !plot_obj.obs.toggle_plotID.active.val
     if use_simulated_data
-        return prepare_scen_input(; inf_p, included, plot_obj, scen)
+        return inf_p, prepare_scen_input(; included, plot_obj, scen)
     else
-        return prepare_valid_input(; inf_p, included, plot_obj, valid)
+        return inf_p, prepare_valid_input(; included, plot_obj, valid)
     end
 end
 
-function prepare_valid_input(; inf_p, included, plot_obj, valid)
+function prepare_valid_input(; included, plot_obj, valid)
     plotID = plot_obj.obs.menu_plotID.selection.val
     input_obj = valid.validation_input(;
         plotID,
         nspecies = plot_obj.obs.nspecies.val,
         startyear = 2009,
         endyear = 2021,
-        inf_p,
         included...)
     set_close_to!(plot_obj.obs.slider_nut, input_obj.site.nutrient_index)
     set_close_to!(plot_obj.obs.slider_pwp_whc,
@@ -41,7 +40,7 @@ function prepare_valid_input(; inf_p, included, plot_obj, valid)
     return input_obj
 end
 
-function prepare_scen_input(; inf_p, included, plot_obj, scen)
+function prepare_scen_input(; included, plot_obj, scen)
     # ------------- mowing
     mowing_selected = [toggle.active.val for toggle in plot_obj.obs.toggles_mowing]
     mowing_dates = [tb.stored_string.val for tb in plot_obj.obs.tb_mowing_date][mowing_selected]
@@ -66,7 +65,6 @@ function prepare_scen_input(; inf_p, included, plot_obj, scen)
     PWP, WHC = plot_obj.obs.slider_pwp_whc.interval.val
 
     input_obj = scen.scenario_input(;
-        inf_p,
         nyears = plot_obj.obs.nyears.val,
         nspecies = plot_obj.obs.nspecies.val,
         explo = plot_obj.obs.menu_explo.selection.val,

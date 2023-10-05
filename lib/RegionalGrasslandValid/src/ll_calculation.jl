@@ -1,26 +1,23 @@
 function loglikelihood_model(sim::Module;
     inf_p,
+    input_objs = nothing,
+    valid_data = nothing,
+    calc = nothing,
     plotID,
-    nspecies,
     pretty_print = false,
     return_seperate = false,
     only_likelihood = false,
     include_traits = true,
     include_soilmoisture = true,
-    seed = rand(1:1000000),
     data = nothing,
     sol = nothing)
 
-    ### do we need this line?
+    ### do we need this line (from calling julia from R)?
     inf_p = (; inf_p...)
     if isnothing(data) || isnothing(sol)
-        data, sol = get_plottingdata(sim;
-            inf_p,
-            plotID,
-            nspecies = Int(nspecies),
-            startyear = 2009,
-            endyear = 2021,
-            seed)
+        data = valid_data[plotID]
+        input_obj = input_objs[plotID]
+        sol = sim.solve_prob(; input_obj, inf_p, calc)
     end
 
     selected_patch = 1
@@ -140,34 +137,20 @@ function loglikelihood_model(sim::Module;
     return ll + prior
 end
 
-VIP_plots = ["$(explo)0$i" for i in 1:9 for explo in ["HEG", "SEG", "AEG"]];
-
-function ll_VIPS_t(sim; inf_p, nspecies)
-    ll = Threads.Atomic{Float64}(0.0)
-    Threads.@threads for plotID in VIP_plots
-        ll_plot = loglikelihood_model(sim;
-            plotID,
-            inf_p,
-            nspecies)
-        Threads.atomic_add!(ll, ll_plot)
-    end
-
-    ### free RAM space
-    # GC.gc()
-    # ccall(:malloc_trim, Cvoid, (Cint,), 0)
-
-    return ll[]
-end
-
-# function ll_VIPS(sim; inf_p)
-#     ll = 0.0
-#     for plotID in VIP_plots
+# VIP_plots = ["$(explo)0$i" for i in 1:9 for explo in ["HEG", "SEG", "AEG"]];
+# function ll_VIPS_t(sim; inf_p, nspecies)
+#     ll = Threads.Atomic{Float64}(0.0)
+#     Threads.@threads for plotID in VIP_plots
 #         ll_plot = loglikelihood_model(sim;
 #             plotID,
-#             inf_p)
-
-#         ll += ll_plot
+#             inf_p,
+#             nspecies)
+#         Threads.atomic_add!(ll, ll_plot)
 #     end
 
-#     return ll
+#     ### free RAM space
+#     # GC.gc()
+#     # ccall(:malloc_trim, Cvoid, (Cint,), 0)
+
+#     return ll[]
 # end

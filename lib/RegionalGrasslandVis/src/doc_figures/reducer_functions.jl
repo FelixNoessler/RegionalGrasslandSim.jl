@@ -77,7 +77,6 @@ end
 function height_influence(sim;
     path = nothing,
     height_strength)
-
     biomass = fill(10, 3)u"kg / ha"
     height = [NaN, 0.1, 0.5]u"m"
 
@@ -85,18 +84,20 @@ function height_influence(sim;
     growth_factors = Array{Float64}(undef, 3, length(height_vals))
 
     nspecies = length(height)
-    calc_var = fill(0.0, nspecies)
-    biomass_height = fill(0.0, nspecies)u"kg * m / ha"
+    calc = (;
+        heightinfluence = fill(0.0, nspecies),
+        biomass_height = fill(0.0, nspecies)u"kg * m / ha")
 
     for (i, height_1) in enumerate(height_vals)
         height[1] = height_1 * u"m"
+
         sim.Growth.height_influence!(;
+            calc,
             biomass,
-            height,
-            biomass_height,
-            height_strength, height_included = true,
-            height_influence = calc_var)
-        growth_factors[:, i] .= calc_var
+            height_included = true,
+            height)
+
+        growth_factors[:, i] .= calc.heightinfluence
     end
 
     fig = Figure(; resolution = (700, 400))
@@ -132,31 +133,30 @@ end
 
 function below_influence(sim;
     path = nothing,
-    below_competition_strength)
-
-    biomass_vals = LinRange(0, 500, 100)u"kg / ha"
+    belowground_density_effect)
+    biomass_vals = LinRange(0, 2000, 100)u"kg / ha"
     trait_similarity = [1 0.7 0.8;
-                        0.7 1 0.75;
-                        0.8 0.75 1]u"ha / kg"
+        0.7 1 0.75;
+        0.8 0.75 1]u"ha / kg"
 
     nspecies = size(trait_similarity, 1)
-    biomass = fill(25.0, nspecies)u"kg / ha"
+    biomass = fill(100.0, nspecies)u"kg / ha"
 
     growth_factors = Array{Float64}(undef, nspecies, length(biomass_vals))
 
-    calc_var = fill(0.0, nspecies)
-    traitsimilarity_biomass = fill(0.0, nspecies)
-
+    calc = (;
+        traitsimilarity_biomass = fill(0.0, nspecies),
+        below_split = fill(0.0, nspecies))
 
     for (i, biomass_val) in enumerate(biomass_vals)
         biomass[1] = biomass_val
         sim.Growth.below_ground_competition!(;
-            below = calc_var,
-            traitsimilarity_biomass,
-            biomass, below_included=true,
+            calc,
+            biomass,
+            below_included = true,
             trait_similarity,
-            below_competition_strength)
-        growth_factors[:, i] .= calc_var
+            belowground_density_effect)
+        growth_factors[:, i] .= calc.below_split
     end
 
     fig = Figure(; resolution = (700, 400))
@@ -164,7 +164,7 @@ function below_influence(sim;
         ylabel = "Below ground competition\ngrowth factor (below)",
         xlabel = "Biomas of species 1 [kg ha⁻¹]",
         xticklabelcolor = :blue)
-    ax.title = "below_competition_strength = $(below_competition_strength)"
+    ax.title = "belowground_density_effect = $(belowground_density_effect)"
 
     lines!(ustrip.(biomass_vals), growth_factors[1, :];
         label = "varied biomass on x-Axis",
@@ -180,7 +180,7 @@ function below_influence(sim;
         color = :orange)
     Legend(fig[1, 2], ax; framevisible = false)
 
-    ylims!(ax, 0.1, 2.5)
+    # ylims!(ax, 0.1, 2.5)
 
     if !isnothing(path)
         save(path, fig;)

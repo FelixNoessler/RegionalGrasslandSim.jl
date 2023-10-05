@@ -10,7 +10,8 @@
 ```math
 \begin{align}
     \lambda &= \frac{\text{mown_height}}{height}\\
-    \text{mow_factor} &= \frac{1}{1+exp(-0.1*(\text{days_since_last_mowing}-\text{mowing_mid_days})}\\
+    \text{mow_factor} &= \frac{1}{1+exp(-0.1*(\text{days_since_last_mowing}
+        - \text{mowing_mid_days})}\\
     \text{mow} &= \lambda \cdot \text{biomass}
 \end{align}
 ```
@@ -55,18 +56,22 @@ end
 μₘₐₓ &= κ \cdot \text{LD} \\
 h &= \frac{1}{μₘₐₓ} \\
 a &= \frac{1}{\text{grazing_half_factor}^2 \cdot h} \\
-\text{totgraz} &= \frac{a \cdot (\sum \text{biomass})^2}{1 + a\cdot h\cdot (\sum \text{biomass})^2} \\
-\text{graz} &= \text{totgraz} \cdot \frac{ρ \cdot \text{biomass}}{\sum ρ \cdot \text{biomass}}
+\text{totgraz} &= \frac{a \cdot (\sum \text{biomass})^2}
+                    {1 + a\cdot h\cdot (\sum \text{biomass})^2} \\
+\text{graz} &= \text{totgraz} \cdot \frac{ρ \cdot \text{biomass}}
+                    {\sum ρ \cdot \text{biomass}}
 \end{align}
 ```
 
 - `LD` daily livestock density (livestock units ha⁻¹)
 - `κ` daily consumption of one livestock unit, follows [Gillet2008](@cite)
-- `ρ` appetence of the plant species for livestock, dependent on nitrogen per leaf mass (LNCM)
+- `ρ` appetence of the plant species for livestock,
+  dependent on nitrogen per leaf mass (LNCM)
 - `grazing_half_factor` is the half-saturation constant
 - equation partly based on [Moulin2021](@cite)
 
-Influence of grazing (livestock density = 2), all plant species have an equal amount of biomass (total biomass / 3):
+Influence of grazing (livestock density = 2), all plant species have
+an equal amount of biomass (total biomass / 3):
 ![Image of grazing effect](../../img/grazing.svg)
 
 Influence of `grazing_half_factor` (`LD` is set to 2):
