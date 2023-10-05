@@ -99,8 +99,11 @@ function scenario_input(;
         season_red,
         radiation_red)
 
-    return (nspecies,
+    return (
+        nspecies,
         npatches,
+        patch_xdim = Int(sqrt(npatches)),
+        patch_ydim = Int(sqrt(npatches)),
         constant_seed,
         included,
         startyear = 0,

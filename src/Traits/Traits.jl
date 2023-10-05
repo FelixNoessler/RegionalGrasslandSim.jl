@@ -7,7 +7,6 @@ using LinearAlgebra
 import Random
 
 function load_gm(datapath)
-    ########### parameters for gaussian mixture model
     μ, Σ, ϕ = load("$datapath/input/traits_gaussian_mixture.jld2", "μ", "Σ", "ϕ")
 
     m = MixtureModel([

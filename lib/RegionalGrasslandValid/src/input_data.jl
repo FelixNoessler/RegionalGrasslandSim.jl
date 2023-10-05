@@ -130,6 +130,8 @@ function validation_input(;
 
     return (nspecies,
         npatches,
+        patch_xdim = Int(sqrt(npatches)),
+        patch_ydim = Int(sqrt(npatches)),
         included,
         startyear,
         endyear,

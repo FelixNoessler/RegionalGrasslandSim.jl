@@ -27,7 +27,7 @@ function one_day!(; calc, p, t)
         end
 
         if !iszero(sum(patch_biomass))
-            if p.mowing_included
+            if p.included.mowing_included
                 # -------------- mowing
                 mowing_height = p.daily_data.mowing[t]
                 if !iszero(mowing_height)
@@ -49,7 +49,7 @@ function one_day!(; calc, p, t)
                 end
             end
 
-            if p.grazing_included
+            if p.included.grazing_included
                 LD = p.daily_data.grazing[t]
                 if !iszero(LD)
                     # -------------- grazing
@@ -76,7 +76,7 @@ function one_day!(; calc, p, t)
                 WR = patch_water)
 
             # -------------- senescence
-            if p.senescence_included
+            if p.included.senescence_included
                 Growth.senescence!(;
                     sen = calc.sen,
                     ST = p.daily_data.temperature_sum[t],
@@ -157,8 +157,7 @@ function initialize_parameters(; input_obj, inf_p)
 
     #--------- store everything in one object
     p = (;
-        npatches = input_obj.npatches,
-        nspecies = input_obj.nspecies,
+        input_obj...,
         species = (;
             SLA = traits.SLA,
             μ,
@@ -181,10 +180,7 @@ function initialize_parameters(; input_obj, inf_p)
                 sla_water_lower,
                 sla_water_midpoint)),
         inf_p,
-        site = input_obj.site,
-        trait_similarity,
-        daily_data = input_obj.daily_data,
-        input_obj.included...)
+        trait_similarity)
 
     return p
 end

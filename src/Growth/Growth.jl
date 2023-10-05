@@ -17,7 +17,7 @@ function growth!(; t, p, calc, biomass, WR)
     #### potential growth
     LAItot = potential_growth!(;
         calc,
-        potgrowth_included = p.potgrowth_included,
+        potgrowth_included = p.included.potgrowth_included,
         SLA = p.species.SLA,
         biomass,
         PAR = p.daily_data.PAR[t])
@@ -26,14 +26,14 @@ function growth!(; t, p, calc, biomass, WR)
     height_influence!(;
         calc,
         biomass,
-        height_included = p.height_included,
+        height_included = p.included.height_included,
         height = p.species.height)
 
     #### below ground competition --> trait similarity and abundance
     below_ground_competition!(;
         calc,
         biomass,
-        below_included = p.below_included,
+        below_included = p.included.below_included,
         trait_similarity = p.trait_similarity,
         belowground_density_effect = p.inf_p.belowground_density_effect)
 
@@ -44,22 +44,22 @@ function growth!(; t, p, calc, biomass, WR)
         PWP = p.site.PWP,
         WHC = p.site.WHC,
         fun_response = p.species.fun_response,
-        water_red = p.water_red,
+        water_red = p.included.water_red,
         PET = p.daily_data.PET[t])
     nutrient_reduction!(;
         calc,
         fun_response = p.species.fun_response,
-        nutrient_red = p.nutrient_red,
+        nutrient_red = p.included.nutrient_red,
         nutrients = p.site.nutrient_index)
     Rred = radiation_reduction(;
         PAR = p.daily_data.PAR[t],
-        radiation_red = p.radiation_red)
+        radiation_red = p.included.radiation_red)
     Tred = temperature_reduction(;
         T = p.daily_data.temperature[t],
-        temperature_red = p.temperature_red)
+        temperature_red = p.included.temperature_red)
     Seasonalred = seasonal_reduction(;
         ST = p.daily_data.temperature_sum[t],
-        season_red = p.season_red)
+        season_red = p.included.season_red)
 
     calc.species_specific_red .= calc.heightinfluence .* calc.Waterred .*
                                  calc.Nutred #.* calc.below
