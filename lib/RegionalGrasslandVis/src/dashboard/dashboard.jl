@@ -82,7 +82,8 @@ function dashboard(; sim::Module, valid::Module, scen::Module)
             updating_slider = true
             time_slider_changed = Dates.now()
             t = plot_obj.obs.slider_time.value.val
-            trait_mean_biomass(; sol, plot_obj, t = t)
+            trait_mean_biomass(; sol, plot_obj, t)
+            patch_plot(; sol, plot_obj, t)
             updating_slider = false
         end
     end
@@ -123,8 +124,10 @@ function update_plots(; sol, plot_obj, valid_data)
     ########### Soil water
     soilwater_plot(; sol, valid_data, plot_obj)
 
-    # ########### Growth rates
-    # growth_rates(axes[5]; patch = 1, sol, color, colormap, colorrange, plotID)
+    ########### Patches
+    patch_plot(;
+        sol, plot_obj,
+        t = sol.t[end])
 
     ########### Abiotic plot
     abiotic_plot(; sol, plot_obj)

@@ -31,12 +31,13 @@ function prepare_valid_input(; included, plot_obj, valid)
     input_obj = valid.validation_input(;
         plotID,
         nspecies = plot_obj.obs.nspecies.val,
+        npatches = plot_obj.obs.npatches.val,
         startyear = 2009,
         endyear = 2021,
         included...)
-    set_close_to!(plot_obj.obs.slider_nut, input_obj.site.nutrient_index)
+    set_close_to!(plot_obj.obs.slider_nut, mean(input_obj.site.nutrient_index))
     set_close_to!(plot_obj.obs.slider_pwp_whc,
-        ustrip(input_obj.site.PWP), ustrip(input_obj.site.WHC))
+        mean(ustrip(input_obj.site.PWP)), mean(ustrip(input_obj.site.WHC)))
     return input_obj
 end
 
@@ -67,6 +68,7 @@ function prepare_scen_input(; included, plot_obj, scen)
     input_obj = scen.scenario_input(;
         nyears = plot_obj.obs.nyears.val,
         nspecies = plot_obj.obs.nspecies.val,
+        npatches = plot_obj.obs.npatches.val,
         explo = plot_obj.obs.menu_explo.selection.val,
         mowing_doys,
         grazing_start,

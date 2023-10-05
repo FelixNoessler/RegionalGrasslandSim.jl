@@ -13,7 +13,7 @@ include("senescence.jl")
 
 Calculates the actual growth of the plant species.
 """
-function growth!(; t, p, calc, biomass, WR)
+function growth!(; t, p, calc, biomass, WR, nutrients, WHC, PWP)
     #### potential growth
     LAItot = potential_growth!(;
         calc,
@@ -41,8 +41,8 @@ function growth!(; t, p, calc, biomass, WR)
     water_reduction!(;
         calc,
         WR,
-        PWP = p.site.PWP,
-        WHC = p.site.WHC,
+        PWP,
+        WHC,
         fun_response = p.species.fun_response,
         water_red = p.included.water_red,
         PET = p.daily_data.PET[t])
@@ -50,7 +50,7 @@ function growth!(; t, p, calc, biomass, WR)
         calc,
         fun_response = p.species.fun_response,
         nutrient_red = p.included.nutrient_red,
-        nutrients = p.site.nutrient_index)
+        nutrients)
     Rred = radiation_reduction(;
         PAR = p.daily_data.PAR[t],
         radiation_red = p.included.radiation_red)
@@ -207,7 +207,7 @@ In these plots all three plant species have an equal biomass:
 ![](../../img/height_influence_05.svg)
 """
 function height_influence!(;
-    calc, biomass, height, height_included, height_strength = 0.5)
+    calc, biomass, height, height_included, height_strength)
     if !height_included
         @info "Height influence turned off!" maxlog=1
         return 1.0

@@ -109,9 +109,9 @@ function scenario_input(;
         startyear = 0,
         endyear = nyears,
         site = (;
-            nutrient_index,
-            WHC = WHC * u"mm",
-            PWP = PWP * u"mm",
+            nutrient_index = fill(nutrient_index, npatches),
+            WHC = fill(WHC, npatches)u"mm",
+            PWP = fill(PWP, npatches)u"mm",
             initbiomass),
         daily_data)
 end

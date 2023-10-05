@@ -94,6 +94,7 @@ function height_influence(sim;
         sim.Growth.height_influence!(;
             calc,
             biomass,
+            height_strength,
             height_included = true,
             height)
 

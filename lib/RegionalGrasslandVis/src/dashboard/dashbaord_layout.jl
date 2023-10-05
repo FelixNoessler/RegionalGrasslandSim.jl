@@ -113,22 +113,41 @@ function dashboard_layout(; valid)
     [colgap!(scenarioright_layout, i, dist) for (i, dist) in enumerate([5, 4, 4])]
     [rowgap!(scenarioright_layout, i, dist) for (i, dist) in enumerate([5, 4, 10, 10])]
 
-    ############# Number of species
+    ############# Number of species and patches
     Label(both_layout[1, 1:2], "Scenario and Validation";
         tellwidth = true, halign = :left,
         font = :bold)
 
+    ### number of species
     Label(both_layout[2, 1], "Number of species";
+        fontsize = 15,
         tellwidth = true, halign = :right)
     nspecies = Observable(25)
     tb_species = Textbox(both_layout[2, 2],
+        fontsize = 12,
+        textpadding = (10, 10, 2, 2),
         placeholder = string(nspecies.val),
         stored_string = string(nspecies.val),
         validator = Int64)
-
     on(tb_species.stored_string) do s
         nspecies[] = parse(Int64, s)
     end
+
+    ### number of patches
+    Label(both_layout[3, 1], "Number of patches";
+        fontsize = 15,
+        tellwidth = true, halign = :right)
+    npatches = Observable(1)
+    tb_npatches = Textbox(both_layout[3, 2],
+        fontsize = 12,
+        textpadding = (10, 10, 2, 2),
+        placeholder = string(npatches.val),
+        stored_string = string(npatches.val),
+        validator = test_patchnumber)
+    on(tb_npatches.stored_string) do s
+        npatches[] = parse(Int64, s)
+    end
+
 
     ###########
     labels = [
@@ -140,33 +159,33 @@ function dashboard_layout(; valid)
         "include temperature reduction?",
         "include seasonal reduction?",
         "include radtion reduction?"]
-    [Label(both_layout[2 + i, 1], labels[i];
+    [Label(both_layout[3 + i, 1], labels[i];
         tellwidth = true, halign = :right,
         fontsize = 10) for i in eachindex(labels)]
-    toggle_senescence_included = Toggle(both_layout[3, 2],
+    toggle_senescence_included = Toggle(both_layout[4, 2],
         active = true, height = 10)
-    toggle_potgrowth_included = Toggle(both_layout[4, 2],
+    toggle_potgrowth_included = Toggle(both_layout[5, 2],
         active = true, height = 10)
-    toggle_mowing_included = Toggle(both_layout[5, 2],
+    toggle_mowing_included = Toggle(both_layout[6, 2],
         active = true, height = 10)
-    toggle_grazing_included = Toggle(both_layout[6, 2],
+    toggle_grazing_included = Toggle(both_layout[7, 2],
         active = true, height = 10)
-    toggle_below_included = Toggle(both_layout[7, 2],
+    toggle_below_included = Toggle(both_layout[8, 2],
         active = true, height = 10)
-    toggle_height_included = Toggle(both_layout[8, 2],
+    toggle_height_included = Toggle(both_layout[9, 2],
         active = true, height = 10)
-    toggle_water_red = Toggle(both_layout[9, 2],
+    toggle_water_red = Toggle(both_layout[10, 2],
         active = true, height = 10)
-    toggle_nutr_red = Toggle(both_layout[10, 2],
+    toggle_nutr_red = Toggle(both_layout[11, 2],
         active = true, height = 10)
-    toggle_temperature_red = Toggle(both_layout[11, 2],
+    toggle_temperature_red = Toggle(both_layout[12, 2],
         active = true, height = 10)
-    toggle_season_red = Toggle(both_layout[12, 2],
+    toggle_season_red = Toggle(both_layout[13, 2],
         active = true, height = 10)
-    toggle_radiation_red = Toggle(both_layout[13, 2],
+    toggle_radiation_red = Toggle(both_layout[14, 2],
         active = true, height = 10)
 
-    [rowgap!(both_layout, i, dist) for (i, dist) in enumerate(fill(5, 12))]
+    [rowgap!(both_layout, i, dist) for (i, dist) in enumerate(fill(5, 13))]
     colgap!(both_layout, 1, 5)
 
     ############# Plot ID
@@ -283,6 +302,7 @@ function dashboard_layout(; valid)
         slider_nut,
         slider_pwp_whc,
         nspecies,
+        npatches,
         nyears,
         toggles_grazing,
         tb_grazing_start,
@@ -313,4 +333,13 @@ end
 
 function test_date(x)
     return isnothing(tryparse(Dates.Date, x, Dates.dateformat"mm-dd")) ? false : true
+end
+
+function test_patchnumber(x)
+    parsed_num = tryparse(Int64, x)
+    if isnothing(parsed_num)
+        return false
+    else
+        isinteger(sqrt(parsed_num))
+    end
 end

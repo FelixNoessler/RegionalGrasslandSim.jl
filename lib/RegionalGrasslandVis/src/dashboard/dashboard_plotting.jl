@@ -11,7 +11,7 @@ function band_patch(;
     ax.xlabel = "Time [years]"
 
     t = sol.numeric_date
-    biomass_sum = vec(sum(ustrip.(sol.biomass); dims = 3))
+    biomass_sum = vec(sum(ustrip.(sol.biomass); dims = 2:3)) ./ sol.p.npatches
 
     show_grazmow = plot_obj.obs.toggle_grazmow.active.val
     if show_grazmow
@@ -145,8 +145,8 @@ function soilwater_plot(; sol, valid_data, plot_obj, ax_num = 4)
         color = :turquoise3,
         markersize = 4,
         linewidth = 0.1)
-    PWP = ustrip(sol.p.site.PWP)
-    WHC = ustrip(sol.p.site.WHC)
+    PWP = mean(ustrip(sol.p.site.PWP))
+    WHC = mean(ustrip(sol.p.site.WHC))
     lines!(ax, [sol.numeric_date[1], sol.numeric_date[end]], [PWP, PWP];
         color = :blue)
     lines!(ax, [sol.numeric_date[1], sol.numeric_date[end]], [WHC, WHC];
@@ -164,6 +164,36 @@ function soilwater_plot(; sol, valid_data, plot_obj, ax_num = 4)
             color = :black,
             markersize = 2)
     end
+end
+
+
+function patch_plot(; sol, plot_obj, t, ax_num = 5)
+    ax = plot_obj.axes[ax_num]
+    empty!(ax)
+
+    xdim, ydim = sol.p.patch_xdim, sol.p.patch_ydim
+    xs = [[x for x in 1:xdim, y in 1:ydim]...]
+    ys = [[y for x in 1:xdim, y in 1:ydim]...]
+
+    patch_biomass = vec(sum(ustrip.(sol.biomass[t, :, :]); dims=2))
+    colorrange = quantile(mean(ustrip.(sol.biomass); dims=3), [0.0, 1.0])
+
+    scatter!(ax, xs, ys;
+        marker = :rect,
+        markersize = 1.5,
+        markerspace = :data,
+        color = patch_biomass,
+        colorrange,
+        colormap = :viridis)
+
+    text!(ax, xs, ys;
+        text = string.(1:sol.p.npatches),
+        align = (:center, :center))
+
+    ax.aspect = DataAspect()
+    ax.yticks = 1:ydim
+    ax.xticks = 1:xdim
+    ax.limits = (0, xdim + 1, 0, ydim + 1)
 end
 
 function abiotic_plot(; sol, plot_obj, ax_num = 6)

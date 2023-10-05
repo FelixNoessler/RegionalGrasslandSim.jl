@@ -73,7 +73,10 @@ function one_day!(; calc, p, t)
             LAItot = Growth.growth!(;
                 t, p, calc,
                 biomass = patch_biomass,
-                WR = patch_water)
+                WR = patch_water,
+                nutrients = p.site.nutrient_index[pa],
+                WHC = p.site.WHC[pa],
+                PWP = p.site.PWP[pa])
 
             # -------------- senescence
             if p.included.senescence_included
@@ -103,8 +106,8 @@ function one_day!(; calc, p, t)
             precipitation = p.daily_data.precipitation[t],
             LAItot,
             PET = p.daily_data.PET[t],
-            WHC = p.site.WHC,
-            PWP = p.site.PWP)
+            WHC = p.site.WHC[pa],
+            PWP = p.site.PWP[pa])
     end
 
     return nothing

@@ -22,7 +22,7 @@ inf_p = (; zip(Symbol.(mp.names), mp.best)...);
 input_obj = valid.validation_input(;
     plotID = "HEG01", nspecies = 25,
     startyear = 2009, endyear = 2021,
-    npatches = 1);
+    npatches = 4);
 calc = sim.preallocate_vectors(; input_obj);
 @time sol = sim.solve_prob(; input_obj, inf_p, calc);
 # @profview_allocs sim.solve_prob(; input_obj, inf_p, calc) sample_rate = 1.0
