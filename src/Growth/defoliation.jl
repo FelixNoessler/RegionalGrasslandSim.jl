@@ -9,7 +9,7 @@
 
 ```math
 \begin{align}
-    \lambda &= \frac{\text{mown_height}}{height}\\
+    \lambda &= \frac{\text{mown_height}}{\text{height}}\\
     \text{mow_factor} &= \frac{1}{1+exp(-0.1*(\text{days_since_last_mowing}
         - \text{mowing_mid_days})}\\
     \text{mow} &= \lambda \cdot \text{biomass}
@@ -48,6 +48,29 @@ function mowing!(;
     return nothing
 end
 
+
+@doc raw"""
+    grazing_parameter(; LNCM, leafnitrogen_graz_exp)
+
+Initialize the grazing parameter ρ.
+
+```math
+\rho =  \left(\frac{LNCM}{\overline{LNCM}}\right) ^ {\text{leafnitrogen_graz_exp}}
+```
+
+- `LNCM` leaf nitrogen per leaf mass
+- `leafnitrogen_graz_exp` exponent of the leaf nitrogen per leaf mass
+  in the grazing parameter
+- `ρ` appetence of the plant species for livestock,
+  dependent on nitrogen per leaf mass (LNCM) [dimensionless]
+
+The function is excetued once at the start of the simulation.
+The grazing parameter ρ is used in the function [`Growth.grazing!`](@ref).
+"""
+function grazing_parameter(; LNCM, leafnitrogen_graz_exp)
+    return (LNCM ./ mean(LNCM)) .^ leafnitrogen_graz_exp
+end
+
 @doc raw"""
     grazing!(; calc, LD, biomass, ρ, grazing_half_factor)
 
@@ -58,26 +81,35 @@ h &= \frac{1}{μₘₐₓ} \\
 a &= \frac{1}{\text{grazing_half_factor}^2 \cdot h} \\
 \text{totgraz} &= \frac{a \cdot (\sum \text{biomass})^2}
                     {1 + a\cdot h\cdot (\sum \text{biomass})^2} \\
-\text{graz} &= \text{totgraz} \cdot \frac{ρ \cdot \text{biomass}}
-                    {\sum ρ \cdot \text{biomass}}
+\text{share} &= \frac{
+    \rho \cdot \text{biomass}}
+    {\sum \left[ \rho \cdot \text{biomass} \right]} \\
+\text{graz} &= \text{share} \cdot \text{totgraz}
 \end{align}
 ```
 
-- `LD` daily livestock density (livestock units ha⁻¹)
-- `κ` daily consumption of one livestock unit, follows [Gillet2008](@cite)
+- `LD` daily livestock density [livestock units ha⁻¹]
+- `κ` daily consumption of one livestock unit [kg d⁻¹], follows [Gillet2008](@cite)
 - `ρ` appetence of the plant species for livestock,
-  dependent on nitrogen per leaf mass (LNCM)
-- `grazing_half_factor` is the half-saturation constant
+  dependent on nitrogen per leaf mass (LNCM) [dimensionless],
+  initiliazed by the function [`Growth.grazing_parameter`](@ref)
+- `grazing_half_factor` is the half-saturation constant [kg ha⁻¹]
 - equation partly based on [Moulin2021](@cite)
 
 Influence of grazing (livestock density = 2), all plant species have
-an equal amount of biomass (total biomass / 3):
-![Image of grazing effect](../../img/grazing.svg)
+an equal amount of biomass (total biomass / 3)
+and a leaf nitrogen content of 15, 30 and 40 mg/g:
 
-Influence of `grazing_half_factor` (`LD` is set to 2):
+- `leafnitrogen_graz_exp` = 1.5
+![](../../img/grazing_1_5.svg)
+
+- `leafnitrogen_graz_exp` = 5
+![](../../img/grazing_5.svg)
+
+Influence of `grazing_half_factor`:
 ![](../../img/grazing_half_factor.svg)
 """
-function grazing!(; calc, LD, biomass, ρ, grazing_half_factor, leafnitrogen_graz_exp)
+function grazing!(; calc, LD, biomass, ρ, grazing_half_factor)
     κ = 22u"kg / d"
     k_exp = 2
     μₘₐₓ = κ * LD
@@ -90,7 +122,7 @@ function grazing!(; calc, LD, biomass, ρ, grazing_half_factor, leafnitrogen_gra
     biomass_exp = sum(biomass)^2
 
     total_grazed_biomass = a * biomass_exp / (1u"kg / ha"^k_exp + a * h * biomass_exp)
-    calc.biomass_ρ .= (ρ ./ mean(ρ)) .^ leafnitrogen_graz_exp .* biomass
+    @. calc.biomass_ρ = ρ * biomass
     calc.grazed_share .= calc.biomass_ρ ./ sum(calc.biomass_ρ)
 
     #### add grazed biomass to defoliation
@@ -99,45 +131,58 @@ function grazing!(; calc, LD, biomass, ρ, grazing_half_factor, leafnitrogen_gra
     return nothing
 end
 
+
+
+"""
+    trampling_parameter(; trampling_factor)
+
+Intialize the trampling factor.
+
+To avoid a very small trampling factor for paramter inference,
+the trampling factor is divided by 10000 and
+the unit [ha m⁻¹] is added.
+
+The `trampling_factor` is used in the function [`Growth.trampling!`](@ref).
+"""
+function trampling_parameter(; trampling_factor)
+    return trampling_factor * u"ha / m" / 10000
+end
+
 @doc raw"""
     trampling!(; calc, LD, biomass, height, trampling_factor)
 
 ```math
 \begin{align}
-ω &= \frac{\text{trampling_factor}}{height^{0.25}} \\
+\text{trampled_proportion} &=
+    \text{height} \cdot \text{LD} \cdot \text{trampling_factor}  \\
 \text{trampled_biomass} &=
     \begin{cases}
+        \text{biomass} \cdot \text{trampled_proportion},
+            & \text{if trampled_proportion} < 1 \\
         \text{biomass},
-            & \text{if LD > ω}\\
-        \frac{\text{biomass}}{2}
-        \cdot \left(1- cos\left(\frac{π\cdot\text{LD}}{ω}\right)\right),
-            & \text{otherwise}
+            & \text{if trampled_proportion} > 1 \\
 	\end{cases}
 \end{align}
 ```
 
-It is assumed that tall plants (trait: $height$) are stronger affected by trampling.
-A cosine function is used to model the influence of trampling.
+It is assumed that tall plants (trait: `height`) are stronger affected by trampling.
+A linear function is used to model the influence of trampling.
 
-If the livestock density is higher than $ω$, all the biomass of that plant
-species will be removed. This is unlikely to be the case.
+Maximal the whole biomass of a plant species is removed by trampling.
 
 - biomass [$\frac{kg}{ha}$]
 - LD daily livestock density [$\frac{\text{livestock units}}{ha}$]
-- trampling_factor [$ha$]
+- trampling_factor [$ha$], this parameter is initiliazed with the function
+  [`Growth.trampling_parameter`](@ref)
 - height canopy height [$m$]
 
 ![Image of trampling effect](../../img/trampling.svg)
 """
 function trampling!(; calc, LD, biomass, height, trampling_factor)
-    ## higher values of the trampling factor with unit: "m^0.25 / ha"
-    ## --> less loss due to trampling
-    ## values shouldn't be lower than 50,
-    ## otherwise (larger) plants are too heavily influenced
-    @. calc.trampling_ω = trampling_factor / ustrip(height)^0.25 * u"1/ha"
-    @. calc.trampled_biomass = biomass * 0.5 * (1 - cos(π * LD / calc.trampling_ω))
+    @. calc.trampling_proportion = height * LD * trampling_factor
+    @. calc.trampled_biomass = biomass * calc.trampling_proportion
 
-    @. calc.trampling_high_LD = LD > calc.trampling_ω
+    @. calc.trampling_high_LD = calc.trampling_proportion > 1
     if any(calc.trampling_high_LD)
         @warn """
               trampling removed all biomass of at least one plant species

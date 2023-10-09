@@ -63,7 +63,12 @@ vis.seasonal_component_senescence(sim;
 #### land use
 vis.mowing(sim; path = "$docs_img/mowing.svg")
 vis.mow_factor(; path = "$docs_img/mow_factor.svg")
-vis.grazing(sim; path = "$docs_img/grazing.svg")
+vis.grazing(sim;
+    leafnitrogen_graz_exp = 1.5,
+    path = "$docs_img/grazing_1_5.svg")
+vis.grazing(sim;
+    leafnitrogen_graz_exp = 5,
+    path = "$docs_img/grazing_5.svg")
 vis.grazing_half_factor(; path = "$docs_img/grazing_half_factor.svg")
 vis.trampling(sim; path = "$docs_img/trampling.svg")
 
@@ -74,8 +79,11 @@ makedocs(;
     format = Documenter.HTML(prettyurls = true,
         mathengine = MathJax3()),
     modules = [RegionalGrasslandSim],
-    pages = Any["Home" => "index.md",
-        "Modelling API" => Any["Difference equation" => "Modelling_API/Difference_equation/index.md",
+    pages = Any[
+        "Home" => "index.md",
+        "All functions" => "all_functions.md",
+        "Modelling API" => Any[
+            "Difference equation" => "Modelling_API/Difference_equation/index.md",
             "Traits" => "Modelling_API/Traits/index.md",
             "Growth" => "Modelling_API/Growth/index.md",
             "Water dynamics" => "Modelling_API/Water_dynamics/index.md",

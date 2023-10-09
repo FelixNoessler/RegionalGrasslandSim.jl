@@ -1,12 +1,14 @@
 function grazing(sim;
     grazing_half_factor = 1500,
+    leafnitrogen_graz_exp = 1,
     path = nothing)
     nspecies = 3
     nbiomass = 500
 
     LD = 2u"ha ^ -1"
     biomass_vec = LinRange(0, 1000, nbiomass)u"kg / ha"
-    ρ = [0.9, 1.0, 1.2]
+    LNCM = [15, 30, 40]u"mg / g"
+    ρ = round.(sim.Growth.grazing_parameter(; LNCM, leafnitrogen_graz_exp); digits = 2)
 
     calc = (;
         biomass_ρ = fill(0.0, nspecies)u"kg / ha",
@@ -97,9 +99,9 @@ function trampling(sim;
     trampling_factor = 100,
     path = nothing)
     height = reverse([0.1, 0.2, 0.5, 0.8, 1.0]u"m")
-
+    final_trampling_factor = sim.Growth.trampling_parameter(; trampling_factor)
     calc = (;
-        trampling_ω = fill(0.0, nspecies)u"ha^-1",
+        trampling_proportion = fill(0.0, nspecies),
         trampled_biomass = fill(0.0, nspecies)u"kg / ha",
         trampling_high_LD = fill(false, nspecies),
         defoliation = fill(0.0, nspecies)u"kg / (ha * d)")
@@ -113,7 +115,7 @@ function trampling(sim;
             LD,
             biomass,
             height,
-            trampling_factor)
+            trampling_factor = final_trampling_factor)
 
         trampling_mat_height[:, i] = ustrip.(calc.defoliation)
     end

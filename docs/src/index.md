@@ -1,7 +1,7 @@
 # RegionalGrasslandSim.jl
 
-Documentation for RegionalGrasslandSim.jl
+A Julia package for simulating grassland dynamics.
 
-```@index
-Depth = 5
+```@contents
+Depth = 2
 ```

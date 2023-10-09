@@ -61,8 +61,10 @@ Biomass is removed by...
 
 
 ```@docs
+Growth.grazing_parameter
 Growth.grazing!
 Growth.mowing!
+Growth.trampling_parameter
 Growth.trampling!
 ```
 --- 

@@ -58,15 +58,14 @@ function one_day!(; calc, p, t)
                         LD,
                         biomass = patch_biomass,
                         ρ = p.species.ρ,
-                        grazing_half_factor = p.inf_p.grazing_half_factor,
-                        leafnitrogen_graz_exp = p.inf_p.leafnitrogen_graz_exp)
+                        grazing_half_factor = p.inf_p.grazing_half_factor)
 
                     Growth.trampling!(;
                         calc,
                         LD,
                         biomass = patch_biomass,
                         height = p.species.height,
-                        trampling_factor = p.inf_p.trampling_factor)
+                        trampling_factor = p.trampling_factor_unit)
                 end
             end
 
@@ -140,7 +139,13 @@ function initialize_parameters(; input_obj, inf_p)
     μ = sen_intercept * u"d^-1" .+ sen_rate ./ LL
 
     #--------- grazing parameter ρ [dimensionless]
-    ρ = traits.LNCM .* u"g / mg"
+    ρ = Growth.grazing_parameter(;
+        LNCM = traits.LNCM,
+        leafnitrogen_graz_exp = inf_p.leafnitrogen_graz_exp)
+
+    #--------- trampling parameter ω
+    trampling_factor_unit = Growth.trampling_parameter(;
+        trampling_factor = inf_p.trampling_factor)
 
     #--------- functional response
     myco_nut_lower, myco_nut_upper, myco_nut_midpoint = FunctionalResponse.amc_nut_response(;
@@ -184,6 +189,7 @@ function initialize_parameters(; input_obj, inf_p)
                 sla_water_lower,
                 sla_water_midpoint)),
         inf_p,
+        trampling_factor_unit,
         trait_similarity)
 
     return p
@@ -254,7 +260,7 @@ function preallocate_vectors(; input_obj)
         grazed_share = fill(NaN, input_obj.nspecies),
 
         ## trampling
-        trampling_ω = fill(NaN, input_obj.nspecies)u"1/ha",
+        trampling_proportion = fill(NaN, input_obj.nspecies),
         trampled_biomass = fill(NaN, input_obj.nspecies)u"kg / ha",
         trampling_high_LD = fill(false, input_obj.nspecies))
 
