@@ -77,7 +77,7 @@ an equal amount of biomass (total biomass / 3):
 Influence of `grazing_half_factor` (`LD` is set to 2):
 ![](../../img/grazing_half_factor.svg)
 """
-function grazing!(; calc, LD, biomass, ρ, grazing_half_factor)
+function grazing!(; calc, LD, biomass, ρ, grazing_half_factor, leafnitrogen_graz_exp)
     κ = 22u"kg / d"
     k_exp = 2
     μₘₐₓ = κ * LD
@@ -90,8 +90,7 @@ function grazing!(; calc, LD, biomass, ρ, grazing_half_factor)
     biomass_exp = sum(biomass)^2
 
     total_grazed_biomass = a * biomass_exp / (1u"kg / ha"^k_exp + a * h * biomass_exp)
-
-    @. calc.biomass_ρ = ρ * biomass
+    calc.biomass_ρ .= (ρ ./ mean(ρ)) .^ leafnitrogen_graz_exp .* biomass
     calc.grazed_share .= calc.biomass_ρ ./ sum(calc.biomass_ρ)
 
     #### add grazed biomass to defoliation

@@ -58,7 +58,8 @@ function one_day!(; calc, p, t)
                         LD,
                         biomass = patch_biomass,
                         ρ = p.species.ρ,
-                        grazing_half_factor = p.inf_p.grazing_half_factor)
+                        grazing_half_factor = p.inf_p.grazing_half_factor,
+                        leafnitrogen_graz_exp = p.inf_p.leafnitrogen_graz_exp)
 
                     Growth.trampling!(;
                         calc,
