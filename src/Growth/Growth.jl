@@ -26,6 +26,7 @@ function growth!(; t, p, calc, biomass, WR, nutrients, WHC, PWP)
     height_influence!(;
         calc,
         biomass,
+        height_strength = p.inf_p.height_strength,
         height_included = p.included.height_included,
         height = p.species.height)
 
@@ -189,7 +190,7 @@ end
 
 @doc raw"""
     height_influence!(;
-        calc, biomass, height, height_included, height_strength = 0.5)
+        calc, biomass, height, height_included, height_strength)
 
 ```math
 \text{heightinfluence} =

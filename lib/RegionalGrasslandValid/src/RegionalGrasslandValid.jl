@@ -36,6 +36,7 @@ function model_parameters()
         "moistureconv_alpha", "moistureconv_beta",
         "senescence_intercept", "senescence_rate",
         "belowground_density_effect", "belowtrait_similarity_exponent",
+        "height_strength",
         "trampling_factor", "grazing_half_factor",
         "mowing_mid_days", "max_SRSA_water_reduction", "max_SLA_water_reduction",
         "max_AMC_nut_reduction", "max_SRSA_nut_reduction",
@@ -49,6 +50,7 @@ function model_parameters()
         2.680997367833937,
         1.0346464525351673,
         19.71635483939154,
+        0.5,
         251.43022955138898,
         1645.3988036165588,
         3.523324632368246,
@@ -65,9 +67,9 @@ function model_parameters()
         405.40235861163285,
     ]
 
-    #         mc_α mc_β s_i s_r below bsim tram graz mow SRSA SLA  AMC  SRSA_n
-    lb_prep = [0, 0, 0, 0, -10, 0, 100, 0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    ub_prep = [80, 300, 10, 10, 2.5, 30, 300, 2000, 50, 1.0, 1.0, 1.0, 1.0]
+    #         mc_α mc_β s_i s_r below bsim height tram graz mow SRSA SLA  AMC  SRSA_n
+    lb_prep = [0,    0,  0,  0, -10,   0,  0,     100,    0,  0, 0.0, 0.0, 0.0, 0.0]
+    ub_prep = [80, 300, 10, 10, 2.5,   30, 1,     300, 2000, 50, 1.0, 1.0, 1.0, 1.0]
     nscale_params = sum(startswith.(names, "b_"))
     lb_b = zeros(nscale_params)
     ub_b = fill(5e3, nscale_params)
