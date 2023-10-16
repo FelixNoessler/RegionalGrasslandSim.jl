@@ -23,6 +23,7 @@ include("dashboard/dashbaord_layout.jl")
 include("dashboard/dashboard_plotting.jl")
 include("dashboard/dashboard_prepare_input.jl")
 
+include("doc_figures/clonalgrowth.jl")
 include("doc_figures/functional_response.jl")
 include("doc_figures/landuse.jl")
 include("doc_figures/reducer_functions.jl")

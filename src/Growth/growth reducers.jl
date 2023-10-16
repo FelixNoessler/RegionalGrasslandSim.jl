@@ -123,11 +123,10 @@ function water_reduction!(;
     exp_fun = -(β₂ * PET / PETₘₐₓ + (1 - PET / PETₘₐₓ) * β₁)
     x = (1 - exp(exp_fun * W)) / (1 - exp(exp_fun))
     @. calc.water_splitted = x * calc.below_split
+
     ### ------------ species specific functional response
-    sla_water_reduction!(;
-        sla_water = calc.sla_water, fun_response, x = calc.water_splitted)
-    srsa_water_reduction!(;
-        srsa_water = calc.srsa_water, fun_response, x = calc.water_splitted)
+    sla_water_reduction!(; calc, fun_response)
+    srsa_water_reduction!(; calc, fun_response)
 
     @. calc.Waterred = calc.sla_water * calc.srsa_water
 
@@ -135,38 +134,34 @@ function water_reduction!(;
 end
 
 """
-    sla_water_reduction!(;
-        sla_water,
-        fun_response,
-        x)
+    sla_water_reduction!(; calc, fun_response)
 
 Reduction of growth due to stronger water stress for higher specific leaf area (SLA).
 """
-function sla_water_reduction!(;
-    sla_water,
-    fun_response,
-    x)
+function sla_water_reduction!(; calc, fun_response)
     k_SLA = 5
 
-    @. sla_water = fun_response.sla_water_lower +
-                   (1 - fun_response.sla_water_lower) /
-                   (1 + exp(-k_SLA * (x - fun_response.sla_water_midpoint)))
+    @. calc.sla_water = fun_response.sla_water_lower +
+        (1 - fun_response.sla_water_lower) /
+            (1 + exp(-k_SLA *
+                (calc.water_splitted - fun_response.sla_water_midpoint)))
 
     return nothing
 end
 
 """
-    srsa_water_reduction!(; srsa_water, fun_response, x)
+    srsa_water_reduction!(; calc, fun_response)
 
 Reduction of growth due to stronger water stress for lower specific
 root surface area per above ground biomass (`SRSA_above`).
 """
-function srsa_water_reduction!(; srsa_water, fun_response, x)
+function srsa_water_reduction!(; calc, fun_response)
     k_SRSA = 7
 
-    @. srsa_water = fun_response.srsa_water_lower +
-                    (fun_response.srsa_water_upper - fun_response.srsa_water_lower) /
-                    (1 + exp(-k_SRSA * (x - fun_response.srsa_midpoint)))
+    @. calc.srsa_water = fun_response.srsa_water_lower +
+        (fun_response.srsa_water_upper - fun_response.srsa_water_lower) /
+            (1 + exp(-k_SRSA *
+                (calc.water_splitted - fun_response.srsa_midpoint)))
     return nothing
 end
 
@@ -192,10 +187,8 @@ function nutrient_reduction!(;
     @. calc.nutrients_splitted = calc.below_split * nutrients
 
     ### ------------ species specific functional response
-    amc_nut_reduction!(;
-        amc_nut = calc.amc_nut, fun_response, x = calc.nutrients_splitted)
-    srsa_nut_reduction!(;
-        srsa_nut = calc.srsa_nut, fun_response, x = calc.nutrients_splitted)
+    amc_nut_reduction!(; calc, fun_response)
+    srsa_nut_reduction!(; calc, fun_response)
 
     @. calc.Nutred = max(calc.amc_nut, calc.srsa_nut)
 
@@ -203,32 +196,34 @@ function nutrient_reduction!(;
 end
 
 """
-    amc_nut_reduction!(; amc_nut, fun_response, x)
+    amc_nut_reduction!(; calc, fun_response)
 
 Reduction of growth due to stronger nutrient stress for lower
 arbuscular mycorrhizal colonization (`AMC`).
 """
-function amc_nut_reduction!(; amc_nut, fun_response, x)
+function amc_nut_reduction!(; calc, fun_response)
     k_AMC = 7
 
-    @. amc_nut = fun_response.myco_nut_lower +
-                 (fun_response.myco_nut_upper - fun_response.myco_nut_lower) /
-                 (1 + exp(-k_AMC * (x - fun_response.myco_nut_midpoint)))
+    @. calc.amc_nut = fun_response.myco_nut_lower +
+        (fun_response.myco_nut_upper - fun_response.myco_nut_lower) /
+            (1 + exp(-k_AMC *
+                (calc.nutrients_splitted - fun_response.myco_nut_midpoint)))
     return nothing
 end
 
 """
-    srsa_nut_reduction!(; srsa_nut, fun_response, x)
+    srsa_nut_reduction!(;  calc, fun_response)
 
 Reduction of growth due to stronger nutrient stress for lower specific
 root surface area per above ground biomass (`SRSA_above`).
 """
-function srsa_nut_reduction!(; srsa_nut, fun_response, x)
+function srsa_nut_reduction!(; calc, fun_response)
     k_SRSA = 7
 
-    @. srsa_nut = fun_response.srsa_nut_lower +
-                  (fun_response.srsa_nut_upper - fun_response.srsa_nut_lower) /
-                  (1 + exp(-k_SRSA * (x - fun_response.srsa_midpoint)))
+    @. calc.srsa_nut = fun_response.srsa_nut_lower +
+        (fun_response.srsa_nut_upper - fun_response.srsa_nut_lower) /
+            (1 + exp(-k_SRSA *
+                (calc.nutrients_splitted - fun_response.srsa_midpoint)))
     return nothing
 end
 

@@ -66,5 +66,13 @@ Growth.grazing!
 Growth.mowing!
 Growth.trampling_parameter
 Growth.trampling!
+Growth.calculate_relbiomass!
 ```
 --- 
+
+
+## Clonal growth
+    
+```@docs
+Growth.clonalgrowth!
+```

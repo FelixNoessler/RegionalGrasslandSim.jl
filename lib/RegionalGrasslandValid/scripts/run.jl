@@ -20,9 +20,9 @@ using RegionalGrasslandValid
 mp = valid.model_parameters();
 inf_p = (; zip(Symbol.(mp.names), mp.best)...);
 input_obj = valid.validation_input(;
-    plotID = "HEG01", nspecies = 25,
+    plotID = "HEG01", nspecies = 10,
     startyear = 2009, endyear = 2021,
-    npatches = 4);
+    npatches = 1, nutheterog = 0.9);
 calc = sim.preallocate_vectors(; input_obj);
 @time sol = sim.solve_prob(; input_obj, inf_p, calc);
 # @profview_allocs sim.solve_prob(; input_obj, inf_p, calc) sample_rate = 1.0
@@ -34,7 +34,8 @@ input_objs = valid.validation_input_plots(;
     nspecies = 25,
     startyear = 2009,
     endyear = 2021,
-    npatches = 1);
+    npatches = 1,
+    nutheterog = 0.0);
 valid_data = valid.get_validation_data_plots(;
     plotIDs = training_plots,
     startyear = 2009);
@@ -118,30 +119,6 @@ let
         # save("../tmp/2_evapo_$plotID.png", f)
     end
 end
-
-param_vals = [
-    35914.220404412874,
-    70.43347155395173,
-    75.00103265678999,
-    0.2114621486366593,
-    0.4538043668775889,
-    32.78528981780835,
-    3.865860365279632,
-    174.25334577381417,
-    463.81007069310135,
-    15.633385764983174,
-    0.3499484166680329,
-    0.41143613204926305,
-    0.5788642998287264,
-    0.5981211370597104,
-]
-param_names = [
-    "sigma_biomass", "sigma_evaporation", "sigma_soilmoisture",
-    "moisture_conv", "senescence_intercept", "senescence_rate",
-    "below_competition_strength", "trampling_factor", "grazing_half_factor",
-    "mowing_mid_days", "max_SRSA_water_reduction", "max_SLA_water_reduction",
-    "max_AMC_nut_reduction", "max_SRSA_nut_reduction"]
-inf_p = (; zip(Symbol.(param_names), param_vals)...)
 
 @time data, sol = get_plottingdata(sim;
     plotID = "HEG01",

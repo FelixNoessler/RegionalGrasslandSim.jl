@@ -7,7 +7,6 @@ function amc_nut_response(sim;
         mycorrhizal_colon = sort(mycorrhizal_colon),
         maximal_reduction = max_AMC_nut_reduction)
 
-    calc_var = fill(NaN, nspecies)
     xs = 0:0.01:1
     ymat = fill(0.0, length(xs), nspecies)
 
@@ -17,11 +16,12 @@ function amc_nut_response(sim;
         myco_nut_upper = Ks)
 
     for (i, x) in enumerate(xs)
-        sim.Growth.amc_nut_reduction!(;
-            amc_nut = calc_var,
-            fun_response,
-            x)
-        ymat[i, :] .= calc_var
+        calc = (;
+            amc_nut = fill(NaN, nspecies),
+            nutrients_splitted = x)
+
+        sim.Growth.amc_nut_reduction!(; calc, fun_response)
+        ymat[i, :] .= calc.amc_nut
     end
 
     fig = Figure(resolution = (900, 500))
@@ -90,7 +90,6 @@ function srsa_water_response(sim;
         SRSA_above,
         maximal_reduction = max_SRSA_water_reduction)
 
-    calc_var = fill(NaN, nspecies)
     xs = 0:0.01:1
     ymat = fill(0.0, length(xs), nspecies)
 
@@ -100,11 +99,12 @@ function srsa_water_response(sim;
         srsa_water_upper = Ks)
 
     for (i, x) in enumerate(xs)
-        sim.Growth.srsa_water_reduction!(;
-            srsa_water = calc_var,
-            fun_response,
-            x)
-        ymat[i, :] .= calc_var
+        calc = (;
+            srsa_water = fill(NaN, nspecies),
+            water_splitted = x
+        )
+        sim.Growth.srsa_water_reduction!(; calc, fun_response)
+        ymat[i, :] .= calc.srsa_water
     end
 
     fig = Figure(resolution = (900, 500))
@@ -170,7 +170,10 @@ function srsa_nut_response(sim;
         SRSA_above = sort(SRSA_above),
         maximal_reduction = max_SRSA_nut_reduction)
 
-    calc_var = fill(NaN, nspecies)
+
+    calc = (;
+        srsa_nut = fill(NaN, nspecies)
+    )
     xs = 0:0.01:1
     ymat = fill(0.0, length(xs), nspecies)
 
@@ -180,11 +183,12 @@ function srsa_nut_response(sim;
         srsa_nut_upper = Ks)
 
     for (i, x) in enumerate(xs)
-        sim.Growth.srsa_nut_reduction!(;
-            srsa_nut = calc_var,
-            fun_response,
-            x)
-        ymat[i, :] .= calc_var
+        calc = (;
+            srsa_nut = fill(NaN, nspecies),
+            nutrients_splitted = x)
+
+        sim.Growth.srsa_nut_reduction!(; calc, fun_response)
+        ymat[i, :] .= calc.srsa_nut
     end
 
     fig = Figure(resolution = (900, 500))
@@ -303,7 +307,6 @@ function sla_water_response(sim;
     fun_response = (; sla_water_midpoint = x0s, sla_water_lower = A)
 
     xs = 0:0.01:1
-    sla_water = fill(NaN, nspecies)
 
     fig = Figure(resolution = (900, 400))
     Axis(fig[1, 1];
@@ -314,11 +317,12 @@ function sla_water_response(sim;
     ymat = fill(0.0, length(xs), nspecies)
 
     for (i, x) in enumerate(xs)
-        sim.Growth.sla_water_reduction!(;
-            sla_water,
-            fun_response,
-            x)
-        ymat[i, :] .= sla_water
+        calc = (;
+            sla_water = fill(NaN, nspecies),
+            water_splitted = x)
+        sim.Growth.sla_water_reduction!(; calc, fun_response)
+
+        ymat[i, :] .= calc.sla_water
     end
 
     for i in eachindex(x0s)

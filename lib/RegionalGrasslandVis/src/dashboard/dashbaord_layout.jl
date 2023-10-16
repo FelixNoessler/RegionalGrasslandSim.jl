@@ -254,10 +254,15 @@ function dashboard_layout(; valid)
             range = 1:10:5000,
             startvalue = 100,
             snap = false),
+        (label = "nutheterog.",
+        range = 0:0.01:1,
+        startvalue = 0.0),
         tellwidth = false, tellheight = false,
         valign = :top,
         halign = :right)
     slider_time = slidergrid_time.sliders[1]
+    slider_nutheterog = slidergrid_time.sliders[2]
+    rowgap!(slidergrid_time.layout, 1, 0)
 
     ############# Likelihood
     lls = (;
@@ -315,6 +320,7 @@ function dashboard_layout(; valid)
         toggle_validdata,
         toggle_traitvar,
         slider_time,
+        slider_nutheterog,
         toggle_senescence_included,
         toggle_potgrowth_included,
         toggle_mowing_included,

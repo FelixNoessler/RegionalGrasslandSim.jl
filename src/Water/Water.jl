@@ -19,10 +19,10 @@ function change_water_reserve(;
     # -------- Evapotranspiration
     AEv = evaporation(; WR, WHC, PET, LAItot)
     ATr = transpiration(; WR, PWP, WHC, PET, LAItot)
-    AET = actual_evapotranspiration(; WR, ATr, AEv)
+    AET = min(WR / u"d", ATr + AEv)
 
     # -------- Drainage
-    drain = water_drainage(; WR, precipitation, WHC, AET)
+    drain = max(WR / u"d" + precipitation - WHC / u"d" - AET, 0u"mm / d")
 
     # -------- Total change in the water reserve
     water_change = precipitation - drain - AET
@@ -30,14 +30,6 @@ function change_water_reserve(;
     return water_change
 end
 
-"""
-    actual_evapotranspiration(; WR, ATr, AEv)
-
-TBW
-"""
-function actual_evapotranspiration(; WR, ATr, AEv)
-    return min(WR * u"d^-1", ATr + AEv)
-end
 
 """
     transpiration(;
@@ -76,16 +68,6 @@ Aev(t) = WR(t) / WHC * PET(t)*[1 - min(1; LAI_tot(t)/3) ]
 function evaporation(; WR, WHC, PET, LAItot)
     W = WR / WHC
     return W * PET * (1 - min(1, LAItot / 3))
-end
-
-"""
-    water_drainage(; WR, precipitation, WHC, AET)
-
-Δ(𝑡) = max(𝑊𝑅(𝑡) + 𝑃 (𝑡) − 𝐴𝐸𝑇 (𝑡) − 𝑊𝐻𝐶 ; 0)
-"""
-function water_drainage(; WR, precipitation, WHC, AET)
-    return max(WR * u"d^-1" + precipitation - WHC * u"d^-1" - AET,
-        0.0u"mm / d")
 end
 
 end # of module

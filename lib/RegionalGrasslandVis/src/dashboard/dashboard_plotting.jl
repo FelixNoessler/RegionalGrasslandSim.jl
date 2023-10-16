@@ -176,7 +176,8 @@ function patch_plot(; sol, plot_obj, t, ax_num = 5)
     ys = [[y for x in 1:xdim, y in 1:ydim]...]
 
     patch_biomass = vec(sum(ustrip.(sol.biomass[t, :, :]); dims=2))
-    colorrange = quantile(mean(ustrip.(sol.biomass); dims=3), [0.0, 1.0])
+    # colorrange = quantile(mean(ustrip.(sol.biomass); dims=3), [0.0, 1.0])
+    colorrange = quantile(patch_biomass, [0.0, 1.0])
 
     scatter!(ax, xs, ys;
         marker = :rect,
@@ -186,9 +187,9 @@ function patch_plot(; sol, plot_obj, t, ax_num = 5)
         colorrange,
         colormap = :viridis)
 
-    text!(ax, xs, ys;
-        text = string.(1:sol.p.npatches),
-        align = (:center, :center))
+    # text!(ax, xs, ys;
+    #     text = string.(1:sol.p.npatches),
+    #     align = (:center, :center))
 
     ax.aspect = DataAspect()
     ax.yticks = 1:ydim

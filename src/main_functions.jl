@@ -3,10 +3,20 @@
 
 Calculate the density differences of all state variables of one day.
 """
-function one_day!(; calc, p, t)
+function one_day!(; calc, p, t, doy)
     LAItot = 0.0
 
-    for pa in 1:(p.npatches)
+    ## -------- clonal growth
+    if doy[t] == 250 && p.npatches > 1
+        Growth.clonalgrowth!(; p, calc)
+    end
+
+    ## -------- relative biomass per patch -> is needed for grazing
+    if p.npatches > 1
+        Growth.calculate_relbiomass!(; calc, p)
+    end
+
+    for pa in Base.OneTo(p.npatches)
         # --------------------- biomass dynamics
         ### this line is needed because it is possible
         ## that there are numerical errors
@@ -14,7 +24,11 @@ function one_day!(; calc, p, t)
         calc.very_low_biomass .= patch_biomass .< 1e-30u"kg / ha" .&&
                                  .!iszero.(patch_biomass)
         if any(calc.very_low_biomass)
-            patch_biomass[calc.very_low_biomass] .= 0u"kg / ha"
+            for i in eachindex(calc.very_low_biomass)
+                if calc.very_low_biomass[i]
+                    patch_biomass[i] = 0u"kg / ha"
+                end
+            end
             @warn "Set some values of u_biomass to zero" maxlog=10
         end
 
@@ -34,18 +48,22 @@ function one_day!(; calc, p, t)
                     tstart = t - 200
                     tstart = tstart < 1 ? 1 : tstart
                     mowing_last200 = @view p.daily_data.mowing[tstart:t]
-                    days_since_last_mowing = maximum(201 .-
-                                                     findall(.!iszero.(mowing_last200)))
-                    days_since_last_mowing = iszero(days_since_last_mowing) ? 200 :
-                                             days_since_last_mowing
+
+                    days_since_last_mowing = 200
+                    for i in reverse(eachindex(mowing_last200))
+                        if !iszero(mowing_last200[i]) && i != 201
+                            days_since_last_mowing = 201 - i
+                            break
+                        end
+                    end
 
                     Growth.mowing!(;
-                        calc,
-                        mowing_height,
-                        days_since_last_mowing,
-                        height = p.species.height,
-                        biomass = patch_biomass,
-                        mowing_mid_days = p.inf_p.mowing_mid_days)
+                            calc,
+                            mowing_height,
+                            days_since_last_mowing,
+                            height = p.species.height,
+                            biomass = patch_biomass,
+                            mowing_mid_days = p.inf_p.mowing_mid_days)
                 end
             end
 
@@ -57,6 +75,7 @@ function one_day!(; calc, p, t)
                         calc,
                         LD,
                         biomass = patch_biomass,
+                        relbiomass = calc.relbiomass[pa],
                         ρ = p.species.ρ,
                         grazing_half_factor = p.inf_p.grazing_half_factor)
 
@@ -64,6 +83,7 @@ function one_day!(; calc, p, t)
                         calc,
                         LD,
                         biomass = patch_biomass,
+                        relbiomass = calc.relbiomass[pa],
                         height = p.species.height,
                         trampling_factor = p.trampling_factor_unit)
                 end
@@ -74,9 +94,9 @@ function one_day!(; calc, p, t)
                 t, p, calc,
                 biomass = patch_biomass,
                 WR = patch_water,
-                nutrients = p.site.nutrient_index[pa],
-                WHC = p.site.WHC[pa],
-                PWP = p.site.PWP[pa])
+                nutrients = p.nutrients[pa],
+                WHC = p.WHC[pa],
+                PWP = p.PWP[pa])
 
             # -------------- senescence
             if p.included.senescence_included
@@ -106,8 +126,8 @@ function one_day!(; calc, p, t)
             precipitation = p.daily_data.precipitation[t],
             LAItot,
             PET = p.daily_data.PET[t],
-            WHC = p.site.WHC[pa],
-            PWP = p.site.PWP[pa])
+            WHC = p.WHC[pa],
+            PWP = p.PWP[pa])
     end
 
     return nothing
@@ -164,9 +184,31 @@ function initialize_parameters(; input_obj, inf_p)
         SLA = traits.SLA,
         maximal_reduction = inf_p.max_SLA_water_reduction)
 
+    # --------- WHC, PWP and nutrient index
+    WHC, PWP, nutrients = derive_WHC_PWP_nutrients(;
+        patch_xdim = input_obj.patch_xdim,
+        patch_ydim = input_obj.patch_ydim,
+        nutheterog = input_obj.nutheterog,
+        sand = input_obj.site.Sand,
+        silt = input_obj.site.Silt,
+        clay = input_obj.site.Clay,
+        organic = input_obj.site.organic,
+        bulk = input_obj.site.bulk,
+        rootdepth = input_obj.site.root_depth,
+        total_N = input_obj.site.total_N,
+        CN_ratio = input_obj.site.CN_ratio)
+
+    # --------- patch neighbours
+    neighbours = get_allneighbours(; p = input_obj)
+    surroundings = vcat.(neighbours, Base.OneTo(input_obj.npatches))
+
     #--------- store everything in one object
     p = (;
         input_obj...,
+        nutrients,
+        WHC, PWP,
+        neighbours,
+        surroundings,
         species = (;
             SLA = traits.SLA,
             μ,
@@ -225,6 +267,8 @@ function preallocate_vectors(; input_obj)
         sen = zeros(input_obj.nspecies)u"kg / (ha * d)",
         species_specific_red = fill(NaN, input_obj.nspecies),
         LAIs = fill(NaN, input_obj.nspecies),
+        biomass_per_patch = fill(NaN, input_obj.npatches)u"kg / ha",
+        relbiomass = fill(1.0, input_obj.npatches),
 
         ## warnings, debugging, avoid numerical errors
         very_low_biomass = fill(false, input_obj.nspecies),
@@ -262,7 +306,10 @@ function preallocate_vectors(; input_obj)
         ## trampling
         trampling_proportion = fill(NaN, input_obj.nspecies),
         trampled_biomass = fill(NaN, input_obj.nspecies)u"kg / ha",
-        trampling_high_LD = fill(false, input_obj.nspecies))
+
+        ## clonal growth
+        clonalgrowth = fill(NaN, input_obj.npatches, input_obj.nspecies)u"kg / ha")
+
 
     return calc
 end
@@ -286,7 +333,7 @@ function solve_prob(; input_obj, inf_p, calc = nothing)
     end
 
     ts = 1:length(p.daily_data.date)
-    main_loop!(; calc, ts, p)
+    main_loop!(; calc, ts, p, doy=Dates.dayofyear.(p.daily_data.date))
 
     calc.o_biomass[calc.o_biomass .< 0u"kg / ha"] .= 0u"kg / ha"
 
@@ -304,11 +351,10 @@ end
 
 Run the main loop for all days.
 """
-function main_loop!(; calc, ts, p)
+function main_loop!(; calc, ts, p, doy)
     for t in ts
-        one_day!(; calc, p, t)
+        one_day!(; calc, p, t, doy)
 
-        ### no allocations! :)
         calc.u_biomass .+= calc.du_biomass .* u"d"
         calc.u_water .+= calc.du_water .* u"d"
         calc.o_biomass[t, :, :] .= calc.u_biomass

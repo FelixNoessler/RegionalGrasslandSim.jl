@@ -7,6 +7,7 @@ import LinearAlgebra
 include("growth reducers.jl")
 include("defoliation.jl")
 include("senescence.jl")
+include("clonalgrowth.jl")
 
 """
     growth!(; t, p, calc, biomass, WR)

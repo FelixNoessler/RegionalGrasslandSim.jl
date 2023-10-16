@@ -72,15 +72,15 @@ function grazing_parameter(; LNCM, leafnitrogen_graz_exp)
 end
 
 @doc raw"""
-    grazing!(; calc, LD, biomass, ρ, grazing_half_factor)
+    grazing!(; calc, LD, biomass, relbiomass, ρ, grazing_half_factor)
 
 ```math
 \begin{align}
 μₘₐₓ &= κ \cdot \text{LD} \\
 h &= \frac{1}{μₘₐₓ} \\
 a &= \frac{1}{\text{grazing_half_factor}^2 \cdot h} \\
-\text{totgraz} &= \frac{a \cdot (\sum \text{biomass})^2}
-                    {1 + a\cdot h\cdot (\sum \text{biomass})^2} \\
+\text{totgraz} &= \frac{a \cdot (\sum \text{relbiomass}⋅\text{biomass})^2}
+                    {1 + a\cdot h\cdot (\sum \text{relbiomass}⋅\text{biomass})^2} \\
 \text{share} &= \frac{
     \rho \cdot \text{biomass}}
     {\sum \left[ \rho \cdot \text{biomass} \right]} \\
@@ -88,11 +88,17 @@ a &= \frac{1}{\text{grazing_half_factor}^2 \cdot h} \\
 \end{align}
 ```
 
+It is thought that animals consume more in areas with greater biomass,
+resulting in greater trampling damage (see parameter `relbiomass`).
+
 - `LD` daily livestock density [livestock units ha⁻¹]
 - `κ` daily consumption of one livestock unit [kg d⁻¹], follows [Gillet2008](@cite)
 - `ρ` appetence of the plant species for livestock,
   dependent on nitrogen per leaf mass (LNCM) [dimensionless],
   initiliazed by the function [`Growth.grazing_parameter`](@ref)
+- `relbiomass`: relative biomass of the patch in relation to the mean
+  biomass of the whole grassland,
+  is calculated by [`Growth.calculate_relbiomass!`](@ref) [-]
 - `grazing_half_factor` is the half-saturation constant [kg ha⁻¹]
 - equation partly based on [Moulin2021](@cite)
 
@@ -109,7 +115,7 @@ and a leaf nitrogen content of 15, 30 and 40 mg/g:
 Influence of `grazing_half_factor`:
 ![](../../img/grazing_half_factor.svg)
 """
-function grazing!(; calc, LD, biomass, ρ, grazing_half_factor)
+function grazing!(; calc, LD, biomass, relbiomass, ρ, grazing_half_factor)
     κ = 22u"kg / d"
     k_exp = 2
     μₘₐₓ = κ * LD
@@ -119,7 +125,7 @@ function grazing!(; calc, LD, biomass, ρ, grazing_half_factor)
     ## Exponentiation of Quantity with a variable is type unstable
     ## therefore this is a workaround, k_exp = 2
     # https://painterqubits.github.io/Unitful.jl/stable/trouble/#Exponentiation
-    biomass_exp = sum(biomass)^2
+    biomass_exp = relbiomass * sum(biomass)^2
 
     total_grazed_biomass = a * biomass_exp / (1u"kg / ha"^k_exp + a * h * biomass_exp)
     @. calc.biomass_ρ = ρ * biomass
@@ -149,49 +155,66 @@ function trampling_parameter(; trampling_factor)
 end
 
 @doc raw"""
-    trampling!(; calc, LD, biomass, height, trampling_factor)
+    trampling!(; calc, LD, biomass, relbiomass, height, trampling_factor)
 
 ```math
 \begin{align}
 \text{trampled_proportion} &=
     \text{height} \cdot \text{LD} \cdot \text{trampling_factor}  \\
 \text{trampled_biomass} &=
-    \begin{cases}
-        \text{biomass} \cdot \text{trampled_proportion},
-            & \text{if trampled_proportion} < 1 \\
-        \text{biomass},
-            & \text{if trampled_proportion} > 1 \\
-	\end{cases}
+    \min(\text{relbiomass} ⋅ \text{biomass} ⋅ \text{trampled_proportion},
+        \text{biomass}) \\
 \end{align}
 ```
 
 It is assumed that tall plants (trait: `height`) are stronger affected by trampling.
 A linear function is used to model the influence of trampling.
 
+It is thought that animals consume more in areas with greater biomass,
+resulting in greater trampling damage (see parameter `relbiomass`).
+
 Maximal the whole biomass of a plant species is removed by trampling.
 
-- biomass [$\frac{kg}{ha}$]
-- LD daily livestock density [$\frac{\text{livestock units}}{ha}$]
-- trampling_factor [$ha$], this parameter is initiliazed with the function
+- `biomass` [$\frac{kg}{ha}$]
+- `relbiomass`: relative biomass of the patch in relation to the mean
+  biomass of the whole grassland,
+  is calculated by [`Growth.calculate_relbiomass!`](@ref) [-]
+- `LD` daily livestock density [$\frac{\text{livestock units}}{ha}$]
+- `trampling_factor` [$ha$], this parameter is initiliazed with the function
   [`Growth.trampling_parameter`](@ref)
 - height canopy height [$m$]
 
 ![Image of trampling effect](../../img/trampling.svg)
 """
-function trampling!(; calc, LD, biomass, height, trampling_factor)
+function trampling!(; calc, LD, biomass, relbiomass, height, trampling_factor)
     @. calc.trampling_proportion = height * LD * trampling_factor
-    @. calc.trampled_biomass = biomass * calc.trampling_proportion
 
-    @. calc.trampling_high_LD = calc.trampling_proportion > 1
-    if any(calc.trampling_high_LD)
-        @warn """
-              trampling removed all biomass of at least one plant species
-              during one day:
-              - lifestock density LD=$(round(ustrip(LD); digits=2))
-              - trampling_factor=$(round(ustrip(trampling_factor); digits=2))
-              """ maxlog=3
-        calc.trampled_biomass[calc.trampling_high_LD] .= biomass[calc.trampling_high_LD]
-    end
+    @. calc.trampled_biomass = relbiomass * biomass * calc.trampling_proportion
+    @. calc.trampled_biomass .= min.(calc.trampled_biomass, biomass)
+
     calc.defoliation .+= calc.trampled_biomass ./ u"d"
+    return nothing
+end
+
+
+@doc raw"""
+    calculate_relbiomass!(; calc, p)
+
+Relative biomass of the patches in relation to the mean biomass of the overall grassland.
+
+```math
+\text{relbiomass} = \frac{\text{patch_biomass}}{\text{mpatch_biomass}}
+```
+
+- `relbiomass` relative biomass of each patch [-]
+- `patch_biomass` sum of the biomass of all species in one patch [kg ha⁻¹]
+- `mpatch_biomass` mean of the sum of the biomass of all species in all patches [kg ha⁻¹]
+"""
+function calculate_relbiomass!(; calc, p)
+    for pa in Base.OneTo(p.npatches)
+        calc.biomass_per_patch[pa] = mean(@view calc.u_biomass[pa, :])
+    end
+    calc.relbiomass .= calc.biomass_per_patch ./ mean(calc.biomass_per_patch)
+
     return nothing
 end

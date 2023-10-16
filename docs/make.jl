@@ -72,6 +72,9 @@ vis.grazing(sim;
 vis.grazing_half_factor(; path = "$docs_img/grazing_half_factor.svg")
 vis.trampling(sim; path = "$docs_img/trampling.svg")
 
+## clonal growth
+vis.plot_clonalgrowth(sim; path = "$docs_img/clonalgrowth.svg")
+
 # for prettyurls you need locally a live server
 makedocs(;
     plugins = [bib],
@@ -81,13 +84,15 @@ makedocs(;
     modules = [RegionalGrasslandSim],
     pages = Any[
         "Home" => "index.md",
-        "All functions" => "all_functions.md",
+        "Model inputs and outputs" => "model_io.md",
+        "Model calibration" => "calibration.md",
         "Modelling API" => Any[
             "Difference equation" => "Modelling_API/Difference_equation/index.md",
             "Traits" => "Modelling_API/Traits/index.md",
             "Growth" => "Modelling_API/Growth/index.md",
             "Water dynamics" => "Modelling_API/Water_dynamics/index.md",
             "Functional response" => "Modelling_API/Functional_response/index.md"],
+        "TOC all functions" => "all_functions.md",
         "References" => "References.md"])
 
 deploydocs(repo = "github.com/FelixNoessler/RegionalGrasslandSim.jl.git")

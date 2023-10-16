@@ -23,6 +23,7 @@ function grazing(sim;
             calc,
             LD,
             biomass = repeat([biomass], 3),
+            relbiomass = 1.0,
             ρ,
             grazing_half_factor)
         grazing_mat[:, i] = ustrip.(calc.defoliation)
@@ -114,6 +115,7 @@ function trampling(sim;
             calc,
             LD,
             biomass,
+            relbiomass = 1,
             height,
             trampling_factor = final_trampling_factor)
 
